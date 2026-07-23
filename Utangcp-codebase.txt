@@ -1,0 +1,2541 @@
+﻿
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\auth\AuthPage.jsx ==
+
+import { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import styles from './AuthPage.module.css';
+
+export default function AuthPage() {
+  const { login, signup, resetPassword } = useAuth();
+  // 'login' | 'signup' | 'forgot'
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ email: '', password: '', confirm: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setError('');
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (mode === 'forgot') {
+      if (!form.email) {
+        setError('Please enter your email address.');
+        return;
+      }
+      setLoading(true);
+      try {
+        await resetPassword(form.email);
+        setResetSent(true);
+      } catch (err) {
+        console.error('Reset password error code:', err.code, err.message);
+        setError(firebaseErrorMessage(err.code));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (mode === 'signup' && form.password !== form.confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (mode === 'login') {
+        await login(form.email, form.password);
+      } else {
+        await signup(form.email, form.password);
+      }
+    } catch (err) {
+      console.error('Auth error code:', err.code, err.message);
+      const msg = firebaseErrorMessage(err.code);
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleMode = () => {
+    setMode((m) => (m === 'login' ? 'signup' : 'login'));
+    setError('');
+    setResetSent(false);
+    setForm({ email: '', password: '', confirm: '' });
+  };
+
+  const goToForgot = () => {
+    setMode('forgot');
+    setError('');
+    setResetSent(false);
+    setForm((prev) => ({ ...prev, password: '', confirm: '' }));
+  };
+
+  const backToLogin = () => {
+    setMode('login');
+    setError('');
+    setResetSent(false);
+    setForm((prev) => ({ ...prev, password: '', confirm: '' }));
+  };
+
+  const titleText =
+    mode === 'login' ? 'Sign in to continue'
+    : mode === 'signup' ? 'Create your account'
+    : 'Reset your password';
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.logo}>
+          <span className={styles.logoIcon}>ðŸ’³</span>
+        </div>
+        <h1 className={styles.title}>Credit Management</h1>
+        <p className={styles.subtitle}>{titleText}</p>
+
+        {error && (
+          <div className={styles.errorBox} role="alert">
+            {error}
+          </div>
+        )}
+
+        {mode === 'forgot' && resetSent ? (
+          <>
+            <div
+              role="status"
+              style={{
+                background: 'rgba(34, 197, 94, 0.12)',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+                color: '#16a34a',
+                borderRadius: 8,
+                padding: '12px 14px',
+                fontSize: 14,
+                lineHeight: 1.5,
+                marginBottom: 16,
+              }}
+            >
+              A password reset link has been sent to <strong>{form.email}</strong>.
+              Check your inbox (and spam folder), click the link, and set a new
+              password. You can then come back here and log in.
+            </div>
+            <button
+              type="button"
+              className={`btn btn-primary ${styles.submitBtn}`}
+              onClick={backToLogin}
+            >
+              Back to Login
+            </button>
+          </>
+        ) : (
+          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+            <div className={styles.formGroup}>
+              <label className="label" htmlFor="email">Email</label>
+              <input
+                className="input"
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={handleChange}
+              />
+            </div>
+
+            {mode !== 'forgot' && (
+              <div className={styles.formGroup}>
+                <label className="label" htmlFor="password">Password</label>
+                <input
+                  className="input"
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  required
+                  placeholder="Min. 6 characters"
+                  value={form.password}
+                  onChange={handleChange}
+                />
+              </div>
+            )}
+
+            {mode === 'login' && (
+              <p className={styles.toggle} style={{ marginTop: -8, textAlign: 'right' }}>
+                <button
+                  className={styles.toggleBtn}
+                  onClick={goToForgot}
+                  type="button"
+                >
+                  Forgot password?
+                </button>
+              </p>
+            )}
+
+            {mode === 'signup' && (
+              <div className={styles.formGroup}>
+                <label className="label" htmlFor="confirm">Confirm Password</label>
+                <input
+                  className="input"
+                  id="confirm"
+                  name="confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  placeholder="Re-enter password"
+                  value={form.confirm}
+                  onChange={handleChange}
+                />
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className={`btn btn-primary ${styles.submitBtn}`}
+              disabled={loading}
+            >
+              {loading
+                ? 'Please waitâ€¦'
+                : mode === 'login' ? 'Login'
+                : mode === 'signup' ? 'Create Account'
+                : 'Send Reset Link'}
+            </button>
+          </form>
+        )}
+
+        {!resetSent && (
+          <p className={styles.toggle}>
+            {mode === 'forgot' ? (
+              <button className={styles.toggleBtn} onClick={backToLogin} type="button">
+                Back to Login
+              </button>
+            ) : (
+              <>
+                {mode === 'login'
+                  ? "Don't have an account? "
+                  : 'Already have an account? '}
+                <button className={styles.toggleBtn} onClick={toggleMode} type="button">
+                  {mode === 'login' ? 'Sign Up' : 'Login'}
+                </button>
+              </>
+            )}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function firebaseErrorMessage(code) {
+  const map = {
+    'auth/user-not-found': 'No account found with this email.',
+    'auth/wrong-password': 'Incorrect password. Please try again.',
+    'auth/invalid-credential': 'Invalid email or password.',
+    'auth/email-already-in-use': 'This email is already registered.',
+    'auth/invalid-email': 'Please enter a valid email address.',
+    'auth/too-many-requests': 'Too many attempts. Please try again later.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/operation-not-allowed':
+      'Email/Password sign-in is not enabled. Please enable it in Firebase Console â†’ Authentication â†’ Sign-in method.',
+    'auth/weak-password': 'Password is too weak. Use at least 6 characters.',
+    'auth/missing-password': 'Please enter a password.',
+    'auth/missing-email': 'Please enter an email address.',
+    'auth/internal-error': 'An internal error occurred. Please try again.',
+    'auth/unauthorized-continue-uri':
+      'This domain is not authorized in Firebase. Add it under Authentication â†’ Settings â†’ Authorized domains.',
+  };
+  return map[code] || `Something went wrong (${code || 'unknown'}). Please try again.`;
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\Header.jsx ==
+
+import { useState, useRef, useEffect } from 'react';
+import styles from './Header.module.css';
+
+export default function Header({ user, onLogout, isDark, onToggleTheme }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : '?';
+
+  const today = new Date().toLocaleDateString('en-PH', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  return (
+    <header className={styles.header}>
+      {/* Left â€“ branding */}
+      <div className={styles.left}>
+        <span className={styles.icon}>ðŸ’³</span>
+        <div>
+          <h1 className={styles.title}>Credit Management System</h1>
+          <p className={styles.subtitle}>Manage your customers â€¢ by Carlo Gwapo</p>
+        </div>
+      </div>
+
+      {/* Right â€“ user menu */}
+      <div className={styles.right} ref={menuRef}>
+        <button
+          className={styles.avatarBtn}
+          onClick={() => setOpen((p) => !p)}
+          aria-label="Open user menu"
+          aria-expanded={open}
+          aria-haspopup="menu"
+        >
+          <span className={styles.avatar}>{initials}</span>
+          <svg
+            className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="14"
+            height="14"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </button>
+
+        {/* Dropdown */}
+        <div
+          className={`${styles.dropdown} ${open ? styles.dropdownOpen : ''}`}
+          role="menu"
+          aria-label="User menu"
+        >
+          {/* User info */}
+          <div className={styles.dropdownProfile}>
+            <span className={styles.dropdownAvatar}>{initials}</span>
+            <div className={styles.dropdownUserInfo}>
+              <p className={styles.dropdownEmail}>{user?.email}</p>
+              <p className={styles.dropdownRole}>Account Owner</p>
+            </div>
+          </div>
+
+          <div className={styles.divider} />
+
+          {/* Date */}
+          <div className={styles.dropdownMeta}>
+            <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">
+              <path
+                fillRule="evenodd"
+                d="M5.75 2a.75.75 0 0 1 .75.75V4h7V2.75a.75.75 0 0 1 1.5 0V4h.25A2.75 2.75 0 0 1 18 6.75v8.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25v-8.5A2.75 2.75 0 0 1 4.75 4H5V2.75A.75.75 0 0 1 5.75 2Zm-1 5.5c-.69 0-1.25.56-1.25 1.25v6.5c0 .69.56 1.25 1.25 1.25h10.5c.69 0 1.25-.56 1.25-1.25v-6.5c0-.69-.56-1.25-1.25-1.25H4.75Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>{today}</span>
+          </div>
+
+          <div className={styles.divider} />
+
+          {/* Dark mode toggle */}
+          <div className={styles.dropdownRow}>
+            <div className={styles.rowLeft}>
+              <span className={styles.rowIcon} aria-hidden="true">
+                {isDark ? 'ðŸŒ™' : 'â˜€ï¸'}
+              </span>
+              <span className={styles.rowLabel}>Dark Mode</span>
+            </div>
+            <button
+              className={`${styles.toggleSwitch} ${isDark ? styles.toggleOn : ''}`}
+              onClick={onToggleTheme}
+              role="switch"
+              aria-checked={isDark}
+              aria-label="Toggle dark mode"
+            >
+              <span className={styles.toggleThumb} />
+            </button>
+          </div>
+
+          <div className={styles.divider} />
+
+          {/* Logout */}
+          <button
+            className={styles.logoutItem}
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onLogout();
+            }}
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15" aria-hidden="true">
+              <path
+                fillRule="evenodd"
+                d="M3 4.25A2.25 2.25 0 0 1 5.25 2h5.5A2.25 2.25 0 0 1 13 4.25v2a.75.75 0 0 1-1.5 0v-2a.75.75 0 0 0-.75-.75h-5.5a.75.75 0 0 0-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 0 0 .75-.75v-2a.75.75 0 0 1 1.5 0v2A2.25 2.25 0 0 1 10.75 18h-5.5A2.25 2.25 0 0 1 3 15.75V4.25Z"
+                clipRule="evenodd"
+              />
+              <path
+                fillRule="evenodd"
+                d="M6 10a.75.75 0 0 1 .75-.75h9.546l-1.048-.943a.75.75 0 1 1 1.004-1.114l2.5 2.25a.75.75 0 0 1 0 1.114l-2.5 2.25a.75.75 0 1 1-1.004-1.114l1.048-.943H6.75A.75.75 0 0 1 6 10Z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\NavTabs.jsx ==
+
+import styles from './NavTabs.module.css';
+
+const TABS = [
+  { id: 'view', label: 'View Records' },
+  { id: 'add', label: 'Add Customer' },
+  { id: 'bulk', label: 'Bulk Add' },
+  { id: 'stats', label: 'Statistics' },
+  { id: 'payments', label: 'Payment History' },
+];
+
+export default function NavTabs({ activeTab, onChange }) {
+  return (
+    <nav className={styles.nav} aria-label="Main navigation">
+      {TABS.map((tab) => (
+        <button
+          key={tab.id}
+          className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+          onClick={() => onChange(tab.id)}
+          aria-selected={activeTab === tab.id}
+          role="tab"
+        >
+          {tab.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\Alert.jsx ==
+
+import { useEffect } from 'react';
+import styles from './Alert.module.css';
+
+/**
+ * @param {{ type: 'success'|'error', message: string, onClose: () => void, autoDismiss?: number }} props
+ */
+export default function Alert({ type = 'success', message, onClose, autoDismiss = 4000 }) {
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(onClose, autoDismiss);
+    return () => clearTimeout(timer);
+  }, [message, onClose, autoDismiss]);
+
+  if (!message) return null;
+
+  return (
+    <div className={`${styles.alert} ${styles[type]}`} role="alert">
+      <span>{message}</span>
+      <button className={styles.close} onClick={onClose} aria-label="Dismiss">âœ•</button>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\ConfirmModal.jsx ==
+
+import styles from './ConfirmModal.module.css';
+
+/**
+ * @param {{ title: string, message: string, onConfirm: () => void, onCancel: () => void, loading?: boolean }} props
+ */
+export default function ConfirmModal({ title, message, onConfirm, onCancel, loading = false }) {
+  return (
+    <div className={styles.overlay} onClick={onCancel}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <h3 className={styles.title}>{title}</h3>
+        <p className={styles.message}>{message}</p>
+        <div className={styles.actions}>
+          <button className="btn btn-ghost" onClick={onCancel} disabled={loading}>
+            Cancel
+          </button>
+          <button className="btn btn-danger" onClick={onConfirm} disabled={loading}>
+            {loading ? 'Deletingâ€¦' : 'Delete'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\AddCustomer.jsx ==
+
+import { useState, useRef, useEffect } from 'react';
+import Alert from '../shared/Alert';
+import { today } from '../../utils/format';
+import styles from './AddCustomer.module.css';
+
+const EMPTY = {
+  firstname: '',
+  lastname: '',
+  mobile_number: '',
+  product_name: '',
+  price: '',
+  paid: '',
+  date: today(),
+};
+
+const MAX_PHOTO_MB = 5;
+
+export default function AddCustomer({ onAdd, onAddPayment, onUploadPhoto }) {
+  const [form, setForm] = useState(EMPTY);
+  const [alert, setAlert] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const remaining = (Number(form.price) || 0) - (Number(form.paid) || 0);
+
+  // Clean up the object URL when it's replaced or the component unmounts
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const handleChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setAlert({ type: 'error', message: 'Please choose an image file.' });
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+      setAlert({ type: 'error', message: `Photo must be smaller than ${MAX_PHOTO_MB}MB.` });
+      e.target.value = '';
+      return;
+    }
+
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = [];
+    if (!form.firstname || !String(form.firstname).trim()) errs.push('First name is required.');
+    if (!form.lastname || !String(form.lastname).trim()) errs.push('Last name is required.');
+    if (!form.product_name || !String(form.product_name).trim()) errs.push('Product name is required.');
+    if (form.price === '' || form.price === null || Number.isNaN(Number(form.price))) errs.push('Total price is required.');
+    if (form.paid === '' || form.paid === null || Number.isNaN(Number(form.paid))) errs.push('Amount paid is required.');
+    if (errs.length > 0) {
+      setAlert({ type: 'error', message: errs.join(' ') });
+      return;
+    }
+    if (Number(form.paid) > Number(form.price)) {
+      setAlert({ type: 'error', message: 'Amount Paid cannot exceed Total Price.' });
+      return;
+    }
+    setLoading(true);
+    try {
+      let photo_url = null;
+      let photo_path = null;
+
+      if (photoFile) {
+        try {
+          const uploaded = await onUploadPhoto(photoFile);
+          photo_url = uploaded?.url || null;
+          photo_path = uploaded?.path || null;
+        } catch (photoErr) {
+          console.error('Photo upload error:', photoErr);
+          setAlert({ type: 'error', message: 'Customer was not saved: photo upload failed. Please try again.' });
+          setLoading(false);
+          return;
+        }
+      }
+
+      const docRef = await onAdd({
+        ...form,
+        price: Number(form.price),
+        paid: Number(form.paid),
+        photo_url,
+        photo_path,
+      });
+
+      if (Number(form.paid) > 0 && docRef?.id) {
+        await onAddPayment(docRef.id, form.paid, form.date);
+      }
+
+      setAlert({ type: 'success', message: 'New customer record added successfully!' });
+      setForm({ ...EMPTY, date: today() });
+      handleRemovePhoto();
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to add customer. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={styles.wrapper}>
+      <h2 className={styles.heading}>Add New Customer Record</h2>
+
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+        />
+      )}
+
+      <div className={styles.formCard}>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className={styles.group}>
+            <label className="label" htmlFor="photo">Customer Photo (Optional)</label>
+            <div className={styles.photoRow}>
+              {photoPreview ? (
+                <img src={photoPreview} alt="Customer preview" className={styles.photoPreview} />
+              ) : (
+                <div className={styles.photoPlaceholder}>No photo</div>
+              )}
+              <div className={styles.photoActions}>
+                <input
+                  ref={fileInputRef}
+                  id="photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                  className={styles.photoInput}
+                />
+                {photoFile && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={handleRemovePhoto}
+                  >
+                    Remove Photo
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.grid3}>
+            <div className={styles.group}>
+              <label className="label" htmlFor="firstname">First Name</label>
+              <input className="input" id="firstname" name="firstname" required
+                value={form.firstname} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label" htmlFor="lastname">Last Name</label>
+              <input className="input" id="lastname" name="lastname" required
+                value={form.lastname} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label" htmlFor="mobile_number">Mobile Number (Optional)</label>
+              <input className="input" id="mobile_number" name="mobile_number"
+                type="tel" placeholder="e.g., 09123456789"
+                value={form.mobile_number} onChange={handleChange} />
+            </div>
+          </div>
+
+          <div className={styles.grid3}>
+            <div className={styles.group}>
+              <label className="label" htmlFor="price">Total Price (â‚±)</label>
+              <input className="input" id="price" name="price" type="number"
+                min="0" required placeholder="0"
+                value={form.price} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label" htmlFor="paid">Amount Paid (â‚±)</label>
+              <input className="input" id="paid" name="paid" type="number"
+                min="0" required placeholder="0"
+                value={form.paid} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label" htmlFor="remaining">Remaining Balance (â‚±)</label>
+              <input className="input" id="remaining" readOnly
+                value={form.price !== '' || form.paid !== '' ? remaining : ''}
+                tabIndex={-1} />
+            </div>
+          </div>
+
+          <div className={styles.grid2}>
+            <div className={styles.group}>
+              <label className="label" htmlFor="date">Date</label>
+              <input className="input" id="date" name="date" type="date" required
+                value={form.date} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label" htmlFor="product_name">Product Name</label>
+              <input className="input" id="product_name" name="product_name" required
+                placeholder="e.g., Rice, Oil, etc."
+                value={form.product_name} onChange={handleChange} />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Addingâ€¦' : 'Add Customer Record'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\BulkAdd.jsx ==
+
+import { useState, useMemo } from 'react';
+import Alert from '../shared/Alert';
+import { formatCurrency } from '../../utils/format';
+import { loadRecentlyPaid, markRecentlyPaid } from '../../utils/recentlyPaid';
+import styles from './BulkAdd.module.css';
+
+export default function BulkAdd({ customers = [], onBulkAdd }) {
+  const [selected, setSelected] = useState({});
+  const [amount, setAmount] = useState('100');
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState(null);
+  const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
+
+  const toggle = (id) => setSelected((s) => ({ ...s, [id]: !s[id] }));
+
+  // Only show customers with a remaining balance > 0
+  const unpaidCustomers = useMemo(
+    () => customers.filter((c) => (c.remaining_balance ?? 0) > 0),
+    [customers]
+  );
+
+  const filteredCustomers = useMemo(() => {
+    const q = search.toLowerCase();
+    return unpaidCustomers.filter(
+      (c) =>
+        !q ||
+        c.firstname?.toLowerCase().includes(q) ||
+        c.lastname?.toLowerCase().includes(q) ||
+        c.product_name?.toLowerCase().includes(q)
+    );
+  }, [unpaidCustomers, search]);
+
+  const selectAll = () => {
+    const all = {};
+    filteredCustomers.forEach((c) => (all[c.id] = true));
+    setSelected((s) => ({ ...s, ...all }));
+  };
+
+  const clearAll = () => setSelected({});
+
+  const selectedIds = Object.keys(selected).filter((k) => selected[k]);
+  const selectedCount = selectedIds.length;
+
+  const totalAmount = selectedCount * (Number(amount) || 0);
+
+  const handleSubmit = async () => {
+    if (selectedIds.length === 0) {
+      setAlert({ type: 'error', message: 'Please select at least one customer.' });
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      setAlert({ type: 'error', message: 'Please enter a valid payment amount.' });
+      return;
+    }
+    setLoading(true);
+    try {
+      await onBulkAdd(selectedIds, Number(amount));
+      // Mark submitted customers as recently paid â€” persisted for the rest of today
+      // and shared with the Payment History tab.
+      setRecentlyPaid(markRecentlyPaid(selectedIds));
+      setAlert({
+        type: 'success',
+        message: `Payment of ${formatCurrency(Number(amount))} added to ${selectedCount} customer${selectedCount > 1 ? 's' : ''} successfully!`,
+      });
+      setSelected({});
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to add payments. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={styles.wrapper}>
+      <h2 className={styles.heading}>Bulk Add Payment</h2>
+
+      {alert && (
+        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+      )}
+
+      {/* Amount Card */}
+      <div className={styles.formCard}>
+        <h3 className={styles.formTitle}>Payment Settings</h3>
+        <div className={styles.amountRow}>
+          <div className={styles.group}>
+            <label className="label" htmlFor="bulk-amount">
+              Payment Amount (â‚±)
+            </label>
+            <input
+              id="bulk-amount"
+              className="input"
+              type="number"
+              min="1"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+
+          {selectedCount > 0 && (
+            <div className={styles.summaryBox}>
+              <span className={styles.summaryLabel}>Total to be Applied</span>
+              <span className={styles.summaryValue}>{formatCurrency(totalAmount)}</span>
+              <span className={styles.summaryMeta}>
+                {formatCurrency(Number(amount) || 0)} Ã— {selectedCount} customer{selectedCount > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Customer List Card */}
+      <div className={styles.listCard}>
+        {/* Toolbar */}
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarLeft}>
+            <h3 className={styles.formTitle} style={{ margin: 0 }}>Select Customers</h3>
+            {selectedCount > 0 && (
+              <span className={styles.badge}>{selectedCount} selected</span>
+            )}
+          </div>
+          <div className={styles.toolbarRight}>
+            <div className={styles.searchWrap}>
+              <span className={styles.searchIcon}>
+                <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+              </span>
+              <input
+                className={styles.searchInput}
+                placeholder="Search customersâ€¦"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={selectAll}>
+              Select All
+            </button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={clearAll}>
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* List */}
+        <div className={styles.listBody}>
+          {filteredCustomers.length === 0 ? (
+            <div className={styles.empty}>
+              {search ? 'No customers match your search.' : 'No customers with outstanding balance.'}
+            </div>
+          ) : (
+            <ul className={styles.list}>
+              {filteredCustomers.map((c) => {
+                const isChecked = !!selected[c.id];
+                const isPaid = recentlyPaid.has(c.id);
+                return (
+                  <li
+                    key={c.id}
+                    className={[
+                      styles.item,
+                      isChecked ? styles.itemChecked : '',
+                      isPaid ? styles.itemRecentlyPaid : '',
+                    ].join(' ')}
+                    onClick={() => toggle(c.id)}
+                  >
+                    <div className={styles.checkboxWrap}>
+                      <input
+                        type="checkbox"
+                        className={styles.checkbox}
+                        checked={isChecked}
+                        onChange={() => toggle(c.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className={styles.customerInfo}>
+                      <span className={styles.customerName}>
+                        {c.firstname} {c.lastname}
+                      </span>
+                      {c.product_name && (
+                        <span className={styles.productTag}>{c.product_name}</span>
+                      )}
+                      {isPaid && (
+                        <span className={styles.paidTag}>âœ“ Paid this session</span>
+                      )}
+                    </div>
+                    <div className={styles.balanceWrap}>
+                      <span className={styles.balanceLabel}>Balance</span>
+                      <span className={styles.balanceValue}>
+                        {formatCurrency(c.remaining_balance ?? 0)}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Footer Action */}
+      <div className={styles.footer}>
+        <div className={styles.footerInfo}>
+          {selectedCount > 0 ? (
+            <span>
+              <strong>{selectedCount}</strong> customer{selectedCount > 1 ? 's' : ''} selected
+              {amount && Number(amount) > 0 && (
+                <> &mdash; <strong>{formatCurrency(totalAmount)}</strong> total</>
+              )}
+            </span>
+          ) : (
+            <span className={styles.footerHint}>Select customers above to add a payment</span>
+          )}
+        </div>
+        <button
+          type="button"
+          className="btn btn-success"
+          onClick={handleSubmit}
+          disabled={loading || selectedCount === 0}
+        >
+          {loading ? 'Adding Paymentsâ€¦' : `Add Payment to ${selectedCount > 0 ? selectedCount : ''} Selected`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\Customerprofilemodal.jsx ==
+
+import { formatCurrency, formatDate } from '../../utils/format';
+import styles from './CustomerProfileModal.module.css';
+
+function initials(customer) {
+  const a = customer.firstname?.[0] || '';
+  const b = customer.lastname?.[0] || '';
+  return (a + b).toUpperCase() || '?';
+}
+
+export default function CustomerProfileModal({ customer, payments, onClose, onEdit }) {
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className={styles.modalHeader}>
+          <h3>Customer Profile</h3>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">âœ•</button>
+        </div>
+
+        <div className={styles.body}>
+          <div className={styles.photoSection}>
+            {customer.photo_url ? (
+              <img
+                src={customer.photo_url}
+                alt={`${customer.firstname} ${customer.lastname}`}
+                className={styles.photo}
+              />
+            ) : (
+              <div className={styles.photoFallback}>{initials(customer)}</div>
+            )}
+            <h2 className={styles.name}>{customer.firstname} {customer.lastname}</h2>
+            <span className={styles.mobile}>
+              {customer.mobile_number || 'No mobile number provided'}
+            </span>
+          </div>
+
+          <div className={styles.detailsGrid}>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Product</span>
+              <span className={styles.detailValue}>{customer.product_name}</span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Date</span>
+              <span className={styles.detailValue}>{formatDate(customer.date)}</span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Total Price</span>
+              <span className={styles.detailValue}>{formatCurrency(customer.price)}</span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Amount Paid</span>
+              <span className={styles.detailValue}>{formatCurrency(customer.paid)}</span>
+            </div>
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Remaining Balance</span>
+              <span className={`${styles.detailValue} ${customer.remaining_balance > 0 ? styles.balanceNeg : styles.balancePos}`}>
+                {formatCurrency(customer.remaining_balance)}
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.historySection}>
+            <strong className={styles.historyTitle}>Payment History</strong>
+            {payments.length === 0 ? (
+              <p className={styles.noPayments}>No payment history.</p>
+            ) : (
+              <ul className={styles.paymentList}>
+                {payments.map((p) => (
+                  <li key={p.id} className={styles.paymentItem}>
+                    <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
+                    <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className={styles.modalActions}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Close</button>
+          {onEdit && (
+            <button type="button" className="btn btn-warning" onClick={() => { onClose(); onEdit(customer); }}>
+              Edit Record
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\PaymentHistory.jsx ==
+
+import { useState, useMemo } from 'react';
+import Alert from '../shared/Alert';
+import ConfirmModal from '../shared/ConfirmModal';
+import { formatCurrency, formatDate, today } from '../../utils/format';
+import { markRecentlyPaid, unmarkRecentlyPaid } from '../../utils/recentlyPaid';
+import styles from './PaymentHistory.module.css';
+
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Edit Payment Modal ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+function EditPaymentModal({ payment, customers, onSave, onClose }) {
+  const customer = customers.find((c) => c.id === payment.credit_id);
+  const [amount, setAmount] = useState(String(payment.amount));
+  const [date, setDate] = useState(payment.payment_date);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onSave(payment.id, payment.credit_id, amount, date, payment.amount);
+      onClose();
+    } catch {
+      /* handled by parent */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className={styles.modalHeader}>
+          <h3>Edit Payment</h3>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
+        </div>
+
+        {customer && (
+          <div className={styles.customerInfo}>
+            <p><strong>Customer:</strong> {customer.firstname} {customer.lastname}</p>
+            <p><strong>Product:</strong> {customer.product_name}</p>
+            <p><strong>Original Amount:</strong> {formatCurrency(payment.amount)}</p>
+            <p><strong>Original Date:</strong> {formatDate(payment.payment_date)}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className={styles.editForm}>
+          <div className={styles.group}>
+            <label className="label">New Payment Amount (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â±)</label>
+            <input className="input" type="number" min="1" required
+              value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div className={styles.group}>
+            <label className="label">New Payment Date</label>
+            <input className="input" type="date" required
+              value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className={styles.modalActions}>
+            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={loading}>Cancel</button>
+            <button type="submit" className="btn btn-success" disabled={loading}>
+              {loading ? 'Saving' : 'Update Payment'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Main Component ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+export default function PaymentHistory({ customers, payments, onAdd, onUpdate, onDelete }) {
+  const [form, setForm] = useState({ credit_id: '', amount: '', payment_date: today() });
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [searchName, setSearchName] = useState('');
+  const [searchDate, setSearchDate] = useState('');
+  const [alert, setAlert] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+
+  // Outstanding customers (for the add form dropdown)
+  const outstandingCustomers = useMemo(
+    () => customers.filter((c) => c.remaining_balance > 0),
+    [customers]
+  );
+
+  const filteredDropdown = useMemo(() => {
+    const q = customerSearch.toLowerCase();
+    return outstandingCustomers.filter(
+      (c) =>
+        !q ||
+        (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || '')).toLowerCase().includes(q)
+    );
+  }, [outstandingCustomers, customerSearch]);
+
+  // Build enriched payments (join customer info)
+  const enriched = useMemo(() => {
+    return payments.map((p) => {
+      const c = customers.find((c) => c.id === p.credit_id);
+      return { ...p, customer: c };
+    });
+  }, [payments, customers]);
+
+  // Filter payments
+  const filtered = useMemo(() => {
+    return enriched.filter((p) => {
+      if (!p.customer) return false;
+      const nameMatch =
+        !searchName ||
+        (p.customer.firstname + ' ' + p.customer.lastname + ' ' + (p.customer.product_name || ''))
+          .toLowerCase()
+          .includes(searchName.toLowerCase());
+      const dateMatch = !searchDate || p.payment_date === searchDate;
+      return nameMatch && dateMatch;
+    });
+  }, [enriched, searchName, searchDate]);
+
+  const outstandingPayments = filtered.filter((p) => p.customer?.remaining_balance > 0);
+  const paidPayments = filtered.filter((p) => p.customer?.remaining_balance <= 0);
+
+  // Search totals (from daily.php feature)
+  const searchTotal = useMemo(() => {
+    if (!searchDate && !searchName) return null;
+    const subset = searchDate && !searchName
+      ? payments.filter((p) => p.payment_date === searchDate)
+      : searchName && !searchDate
+        ? payments.filter((p) => {
+            const c = customers.find((c) => c.id === p.credit_id);
+            if (!c) return false;
+            return (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || ''))
+              .toLowerCase()
+              .includes(searchName.toLowerCase());
+          })
+        : filtered;
+    const total = subset.reduce((s, p) => s + (p.amount || 0), 0);
+    return total;
+  }, [payments, customers, searchName, searchDate, filtered]);
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!form.credit_id) return;
+    setAddLoading(true);
+    try {
+      await onAdd(form.credit_id, form.amount, form.payment_date);
+      // Only tag as "paid this session" if the payment is for today Ã¢â‚¬â€
+      // Bulk Add's green label is specifically about today's payments.
+      if (form.payment_date === today()) {
+        markRecentlyPaid(form.credit_id);
+      }
+      setAlert({ type: 'success', message: 'Payment recorded successfully!' });
+      setForm({ credit_id: '', amount: '', payment_date: today() });
+      setCustomerSearch('');
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to add payment.' });
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const handleUpdatePayment = async (paymentId, creditId, newAmount, newDate, oldAmount) => {
+    try {
+      await onUpdate(paymentId, creditId, newAmount, newDate, oldAmount);
+      setAlert({ type: 'success', message: 'Payment updated successfully!' });
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to update payment.' });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await onDelete(deleteTarget.id, deleteTarget.credit_id, deleteTarget.amount);
+
+      // If the deleted payment was dated today, clear the customer's
+      // "paid this session" flag â€” but only if they have no other
+      // payment left that's also dated today.
+      if (deleteTarget.payment_date === today()) {
+        const stillPaidToday = payments.some(
+          (p) =>
+            p.credit_id === deleteTarget.credit_id &&
+            p.id !== deleteTarget.id &&
+            p.payment_date === today()
+        );
+        if (!stillPaidToday) {
+          unmarkRecentlyPaid(deleteTarget.credit_id);
+        }
+      }
+
+      setAlert({ type: 'success', message: 'Payment deleted successfully!' });
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to delete payment.' });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleSearchReset = () => {
+    setSearchName('');
+    setSearchDate('');
+  };
+
+  return (
+    <div className={styles.wrapper}>
+      <h2 className={styles.heading}>Payment History</h2>
+
+      {alert && (
+        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+      )}
+
+      {/* Add Payment Form */}
+      <div className={styles.formCard}>
+        <h3 className={styles.formTitle}>Add Payment</h3>
+        <form onSubmit={handleAdd}>
+          <div className={styles.grid}>
+            <div className={styles.group}>
+              <label className="label">Select Customer</label>
+              <input
+                className="input"
+                placeholder="Type to search customer"
+                value={customerSearch}
+                onChange={(e) => setCustomerSearch(e.target.value)}
+                style={{ marginBottom: 8 }}
+              />
+              <select
+                className="input"
+                value={form.credit_id}
+                onChange={(e) => setForm((p) => ({ ...p, credit_id: e.target.value }))}
+                required
+              >
+                <option value="">-- Select --</option>
+                {filteredDropdown.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.firstname} {c.lastname}{c.product_name ? ` (${c.product_name})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.group}>
+              <label className="label">Payment Amount (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â±)</label>
+              <input
+                className="input"
+                type="number"
+                min="1"
+                required
+                placeholder="0"
+                value={form.amount}
+                onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+              />
+            </div>
+
+            <div className={styles.group}>
+              <label className="label">Payment Date</label>
+              <input
+                className="input"
+                type="date"
+                required
+                value={form.payment_date}
+                onChange={(e) => setForm((p) => ({ ...p, payment_date: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-success" disabled={addLoading}>
+            {addLoading ? 'Adding' : 'Add Payment'}
+          </button>
+        </form>
+      </div>
+
+      {/* Search */}
+      <div className={styles.searchCard}>
+        <div className={styles.searchGrid}>
+          <div className={styles.group}>
+            <label className="label">Search by Customer or Product</label>
+            <input
+              className="input"
+              placeholder="Enter name or product"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+            />
+          </div>
+          <div className={styles.group}>
+            <label className="label">Search by Payment Date</label>
+            <input
+              className="input"
+              type="date"
+              value={searchDate}
+              onChange={(e) => setSearchDate(e.target.value)}
+            />
+          </div>
+          {(searchName || searchDate) && (
+            <div className={styles.group} style={{ justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={handleSearchReset} style={{ marginTop: 28 }}>
+                Reset
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Total Summary (daily.php feature) */}
+        {searchTotal !== null && (
+          <div className={styles.totalRow}>
+            <span className={styles.totalLabel}>
+              Total Payments
+              {searchDate ? ` for ${formatDate(searchDate)}` : ''}
+              {searchName ? ` for "${searchName}"` : ''}:
+            </span>
+            <span className={styles.totalAmt}>{formatCurrency(searchTotal)}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Outstanding Payments Table */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Payment History Outstanding Customers</h3>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {outstandingPayments.length === 0 ? (
+                <tr><td colSpan={5} className={styles.empty}>No payment history yet.</td></tr>
+              ) : (
+                outstandingPayments.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.customer?.firstname} {p.customer?.lastname}</td>
+                    <td>{p.customer?.product_name}</td>
+                    <td className={styles.amt}>{formatCurrency(p.amount)}</td>
+                    <td>{formatDate(p.payment_date)}</td>
+                    <td>
+                      <div className={styles.actions}>
+                        <button className="btn btn-warning btn-sm" onClick={() => setEditTarget(p)}>Edit</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget(p)}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Fully Paid Payments Table */}
+      {paidPayments.length > 0 && (
+        <div className={styles.section}>
+          <h3 className={`${styles.sectionTitle} ${styles.paidTitle}`}>
+            Payment History  Fully Paid Customers
+          </h3>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Product</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paidPayments.map((p) => (
+                  <tr key={p.id} className={styles.paidRow}>
+                    <td>{p.customer?.firstname} {p.customer?.lastname}</td>
+                    <td>{p.customer?.product_name}</td>
+                    <td className={styles.amt}>{formatCurrency(p.amount)}</td>
+                    <td>{formatDate(p.payment_date)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {editTarget && (
+        <EditPaymentModal
+          payment={editTarget}
+          customers={customers}
+          onSave={handleUpdatePayment}
+          onClose={() => setEditTarget(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete Payment"
+          message={`Delete payment of ${formatCurrency(deleteTarget.amount)} on ${formatDate(deleteTarget.payment_date)}? This cannot be undone.`}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+          loading={deleting}
+        />
+      )}
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\Statistics.jsx ==
+
+import { useMemo } from 'react';
+import { formatCurrency } from '../../utils/format';
+import styles from './Statistics.module.css';
+
+export default function Statistics({ customers }) {
+  const stats = useMemo(() => {
+    const total = customers.length;
+    const totalPrice = customers.reduce((s, c) => s + (c.price || 0), 0);
+    const totalPaid = customers.reduce((s, c) => s + (c.paid || 0), 0);
+    const totalDebt = customers
+      .filter((c) => c.remaining_balance > 0)
+      .reduce((s, c) => s + c.remaining_balance, 0);
+    return { total, totalPrice, totalPaid, totalDebt };
+  }, [customers]);
+
+  const debtors = useMemo(
+    () =>
+      customers
+        .filter((c) => c.remaining_balance > 0)
+        .sort((a, b) => b.remaining_balance - a.remaining_balance),
+    [customers]
+  );
+
+  const CARDS = [
+    { label: 'Total Customers', value: stats.total, gradient: 'linear-gradient(135deg,#1E4482,#2D68C4)', big: true },
+    { label: 'Total Price', value: formatCurrency(stats.totalPrice), gradient: 'linear-gradient(135deg,#0F7749,#16A34A)' },
+    { label: 'Total Payments Received', value: formatCurrency(stats.totalPaid), gradient: 'linear-gradient(135deg,#0369A1,#0EA5E9)' },
+    { label: 'Total Debt', value: formatCurrency(stats.totalDebt), gradient: 'linear-gradient(135deg,#9B2226,#DC2626)' },
+  ];
+
+  return (
+    <div className={styles.wrapper}>
+      <h2 className={styles.heading}>Statistics Overview</h2>
+
+      <div className={styles.grid}>
+        {CARDS.map((card) => (
+          <div key={card.label} className={styles.card} style={{ background: card.gradient }}>
+            <span className={styles.cardValue}>{card.value}</span>
+            <span className={styles.cardLabel}>{card.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.debtorsSection}>
+        <h3 className={styles.subHeading}>Top Debtors</h3>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Customer Name</th>
+                <th>Product</th>
+                <th>Outstanding Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {debtors.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className={styles.empty}>ðŸŽ‰ No outstanding debts!</td>
+                </tr>
+              ) : (
+                debtors.map((c, i) => (
+                  <tr key={c.id}>
+                    <td className={styles.rank}>{i + 1}</td>
+                    <td className={styles.name}>{c.firstname} {c.lastname}</td>
+                    <td>{c.product_name}</td>
+                    <td className={styles.debt}>{formatCurrency(c.remaining_balance)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\ViewRecords.jsx ==
+
+import { useState, useMemo, useRef, useEffect } from 'react';
+import Alert from '../shared/Alert';
+import ConfirmModal from '../shared/ConfirmModal';
+import CustomerProfileModal from './CustomerProfileModal';
+import { formatCurrency, formatDate, today } from '../../utils/format';
+import styles from './ViewRecords.module.css';
+
+function initials(customer) {
+  const a = customer.firstname?.[0] || '';
+  const b = customer.lastname?.[0] || '';
+  return (a + b).toUpperCase() || '?';
+}
+
+const MAX_PHOTO_MB = 5;
+
+// â”€â”€ Avatar (used in the table + edit modal) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function Avatar({ customer, size = 40, onClick }) {
+  const style = { width: size, height: size, fontSize: size * 0.4 };
+  return customer.photo_url ? (
+    <img
+      src={customer.photo_url}
+      alt={`${customer.firstname} ${customer.lastname}`}
+      className={styles.avatarImg}
+      style={style}
+      onClick={onClick}
+    />
+  ) : (
+    <div className={styles.avatarFallback} style={style} onClick={onClick}>
+      {initials(customer)}
+    </div>
+  );
+}
+
+// â”€â”€ Edit Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function EditModal({ customer, onSave, onClose, onUploadPhoto, onDeletePhoto }) {
+  const [form, setForm] = useState({
+    firstname: customer.firstname || '',
+    lastname: customer.lastname || '',
+    mobile_number: customer.mobile_number || '',
+    product_name: customer.product_name || '',
+    price: customer.price ?? '',
+    paid: customer.paid ?? '',
+    date: customer.date || today(),
+  });
+  const [loading, setLoading] = useState(false);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoError, setPhotoError] = useState('');
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const remaining = (Number(form.price) || 0) - (Number(form.paid) || 0);
+
+  const handleChange = (e) =>
+    setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoError('');
+    if (!file.type.startsWith('image/')) {
+      setPhotoError('Please choose an image file.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+      setPhotoError(`Photo must be smaller than ${MAX_PHOTO_MB}MB.`);
+      e.target.value = '';
+      return;
+    }
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const payload = {
+        ...form,
+        price: Number(form.price),
+        paid: Number(form.paid),
+      };
+
+      if (photoFile) {
+        const uploaded = await onUploadPhoto(photoFile);
+        payload.photo_url = uploaded?.url || null;
+        payload.photo_path = uploaded?.path || null;
+        // Best-effort cleanup of the old file now that the new one is live
+        if (customer.photo_path) onDeletePhoto(customer.photo_path);
+      }
+
+      await onSave(customer.id, payload);
+      onClose();
+    } catch {
+      setPhotoError('Failed to save changes. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.editModal} onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className={styles.modalHeader}>
+          <h3>Edit Customer Record</h3>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">âœ•</button>
+        </div>
+        <form onSubmit={handleSubmit} className={styles.editForm}>
+          <div className={styles.group}>
+            <label className="label" htmlFor="edit_photo">Customer Photo (Optional)</label>
+            <div className={styles.photoRow}>
+              {photoPreview ? (
+                <img src={photoPreview} alt="New preview" className={styles.avatarImg} style={{ width: 56, height: 56 }} />
+              ) : (
+                <Avatar customer={customer} size={56} />
+              )}
+              <div className={styles.photoActions}>
+                <input
+                  ref={fileInputRef}
+                  id="edit_photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handlePhotoChange}
+                />
+                {photoError && <span className={styles.photoError}>{photoError}</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.editGrid}>
+            <div className={styles.group}>
+              <label className="label">First Name</label>
+              <input className="input" name="firstname" required value={form.firstname} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Last Name</label>
+              <input className="input" name="lastname" required value={form.lastname} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Mobile (Optional)</label>
+              <input className="input" name="mobile_number" type="tel" value={form.mobile_number} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Product Name</label>
+              <input className="input" name="product_name" required value={form.product_name} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Total Price (â‚±)</label>
+              <input className="input" name="price" type="number" min="0" required value={form.price} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Amount Paid (â‚±)</label>
+              <input className="input" name="paid" type="number" min="0" required value={form.paid} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Remaining Balance (â‚±)</label>
+              <input className="input" readOnly value={form.price !== '' || form.paid !== '' ? remaining : ''} tabIndex={-1} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Date</label>
+              <input className="input" name="date" type="date" required value={form.date} onChange={handleChange} />
+            </div>
+          </div>
+          <div className={styles.modalActions}>
+            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={loading}>Cancel</button>
+            <button type="submit" className="btn btn-success" disabled={loading}>
+              {loading ? 'Savingâ€¦' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// â”€â”€ Payment History Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function PaymentPanel({ payments }) {
+  if (!payments.length) {
+    return <p className={styles.noPayments}>No payment history.</p>;
+  }
+  return (
+    <ul className={styles.paymentList}>
+      {payments.map((p) => (
+        <li key={p.id} className={styles.paymentItem}>
+          <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
+          <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// â”€â”€ Customer Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile }) {
+  const [showHistory, setShowHistory] = useState(false);
+
+  const customerPayments = useMemo(
+    () => payments.filter((p) => p.credit_id === customer.id),
+    [payments, customer.id]
+  );
+
+  return (
+    <>
+      <tr className={styles.row}>
+        <td>
+          <Avatar customer={customer} onClick={() => onViewProfile(customer)} />
+        </td>
+        <td>
+          <button
+            type="button"
+            className={styles.nameLink}
+            onClick={() => onViewProfile(customer)}
+          >
+            {customer.firstname} {customer.lastname}
+          </button>
+        </td>
+        <td>{customer.mobile_number
+          ? customer.mobile_number
+          : <span className={styles.muted}>Not provided</span>}
+        </td>
+        <td>{formatCurrency(customer.price)}</td>
+        <td>{formatCurrency(customer.paid)}</td>
+        <td className={styles.balanceNeg}>{formatCurrency(customer.remaining_balance)}</td>
+        <td>{formatDate(customer.date)}</td>
+        <td>{customer.product_name}</td>
+        <td>
+          <div className={styles.actions}>
+            <button className="btn btn-warning btn-sm" onClick={() => onEdit(customer)}>Edit</button>
+            <button className="btn btn-danger btn-sm" onClick={() => onDelete(customer)}>Delete</button>
+          </div>
+          <button
+            className={`btn btn-sm ${styles.historyToggle}`}
+            onClick={() => setShowHistory((v) => !v)}
+          >
+            {showHistory ? 'Hide History' : 'Show History'}
+          </button>
+          {showHistory && (
+            <div className={styles.historyPanel}>
+              <strong className={styles.historyTitle}>Payment History:</strong>
+              <PaymentPanel payments={customerPayments} />
+            </div>
+          )}
+        </td>
+      </tr>
+    </>
+  );
+}
+
+// â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export default function ViewRecords({ customers, payments, onUpdate, onDelete, onUploadPhoto, onDeletePhoto }) {
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [profileTarget, setProfileTarget] = useState(null);
+  const [alert, setAlert] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const outstanding = useMemo(() => {
+    const q = search.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.remaining_balance > 0 &&
+        (!q ||
+          c.firstname?.toLowerCase().includes(q) ||
+          c.lastname?.toLowerCase().includes(q) ||
+          c.mobile_number?.toLowerCase().includes(q) ||
+          c.product_name?.toLowerCase().includes(q))
+    );
+  }, [customers, search]);
+
+  const fullyPaid = useMemo(
+    () => customers.filter((c) => c.remaining_balance <= 0),
+    [customers]
+  );
+
+  const profilePayments = useMemo(
+    () => (profileTarget ? payments.filter((p) => p.credit_id === profileTarget.id) : []),
+    [payments, profileTarget]
+  );
+
+  const handleSave = async (id, data) => {
+    try {
+      await onUpdate(id, data);
+      setAlert({ type: 'success', message: 'Customer record updated successfully!' });
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to update record.' });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await onDelete(deleteTarget.id);
+      if (deleteTarget.photo_path) onDeletePhoto(deleteTarget.photo_path);
+      setAlert({ type: 'success', message: 'Record deleted successfully!' });
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to delete record.' });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
+  return (
+    <div className={styles.wrapper}>
+      <h2 className={styles.heading}>Customer Records</h2>
+
+      {alert && (
+        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+      )}
+
+      {/* Search */}
+      <div className={styles.searchBar}>
+        <input
+          className="input"
+          placeholder="Search by name, product, or mobileâ€¦"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Reset</button>
+        )}
+      </div>
+
+      {/* Outstanding Table */}
+      <div className={styles.section}>
+        <h3 className={styles.sectionTitle}>Outstanding Customers</h3>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Photo</th>
+                <th>Name</th>
+                <th>Mobile</th>
+                <th>Total Price</th>
+                <th>Amount Paid</th>
+                <th>Remaining</th>
+                <th>Date</th>
+                <th>Product</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {outstanding.length === 0 ? (
+                <tr><td colSpan={9} className={styles.empty}>No records found</td></tr>
+              ) : (
+                outstanding.map((c) => (
+                  <CustomerRow
+                    key={c.id}
+                    customer={c}
+                    payments={payments}
+                    onEdit={setEditTarget}
+                    onDelete={setDeleteTarget}
+                    onViewProfile={setProfileTarget}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Fully Paid Table */}
+      {fullyPaid.length > 0 && (
+        <div className={styles.section}>
+          <h3 className={`${styles.sectionTitle} ${styles.paidTitle}`}>Fully Paid Customers</h3>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Photo</th>
+                  <th>Name</th>
+                  <th>Mobile</th>
+                  <th>Total Price</th>
+                  <th>Amount Paid</th>
+                  <th>Remaining</th>
+                  <th>Date</th>
+                  <th>Product</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fullyPaid.map((c) => (
+                  <tr key={c.id} className={styles.paidRow}>
+                    <td>
+                      <Avatar customer={c} onClick={() => setProfileTarget(c)} />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.nameLink}
+                        onClick={() => setProfileTarget(c)}
+                      >
+                        {c.firstname} {c.lastname}
+                      </button>
+                    </td>
+                    <td>{c.mobile_number || <span className={styles.muted}>Not provided</span>}</td>
+                    <td>{formatCurrency(c.price)}</td>
+                    <td>{formatCurrency(c.paid)}</td>
+                    <td className={styles.balancePos}>{formatCurrency(c.remaining_balance)}</td>
+                    <td>{formatDate(c.date)}</td>
+                    <td>{c.product_name}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {profileTarget && (
+        <CustomerProfileModal
+          customer={profileTarget}
+          payments={profilePayments}
+          onClose={() => setProfileTarget(null)}
+          onEdit={setEditTarget}
+        />
+      )}
+
+      {editTarget && (
+        <EditModal
+          customer={editTarget}
+          onSave={handleSave}
+          onClose={() => setEditTarget(null)}
+          onUploadPhoto={onUploadPhoto}
+          onDeletePhoto={onDeletePhoto}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete Record"
+          message={`Delete "${deleteTarget.firstname} ${deleteTarget.lastname}" (${deleteTarget.product_name})? This action cannot be undone.`}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+          loading={deleting}
+        />
+      )}
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\useAuth.js ==
+
+import { useState, useEffect } from 'react';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signOut,
+} from 'firebase/auth';
+import { auth } from '../firebase';
+
+// Where Firebase's hosted "your password has been reset" page sends the
+// user after they finish resetting it. Must be an Authorized Domain in
+// Firebase Console -> Authentication -> Settings -> Authorized domains.
+const RESET_CONTINUE_URL = 'https://utangcp.free.nf';
+
+export function useAuth() {
+  // undefined = still loading, null = not logged in, object = logged in
+  const [user, setUser] = useState(undefined);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => setUser(u));
+    return unsubscribe;
+  }, []);
+
+  const login = (email, password) =>
+    signInWithEmailAndPassword(auth, email, password);
+
+  const signup = (email, password) =>
+    createUserWithEmailAndPassword(auth, email, password);
+
+  // Sends a password reset email via Firebase. The user clicks the link,
+  // lands on Firebase's hosted reset page, sets a new password, then gets
+  // a "Continue" button back to RESET_CONTINUE_URL (our login page).
+  const resetPassword = (email) =>
+    sendPasswordResetEmail(auth, email, {
+      url: RESET_CONTINUE_URL,
+      handleCodeInApp: false,
+    });
+
+  const logout = () => signOut(auth);
+
+  return { user, login, signup, logout, resetPassword };
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\useCustomers.js ==
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  writeBatch,
+  getDocs,
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { supabase } from '../supabase';
+
+// Supabase Storage bucket used for customer photos
+const PHOTO_BUCKET = 'Utangcp';
+
+export function useCustomers(userId) {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setCustomers([]);
+      setLoading(false);
+      return;
+    }
+    const q = query(
+      collection(db, 'users', userId, 'credits'),
+      orderBy('firstname', 'asc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCustomers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, [userId]);
+
+  // Upload a customer photo to Supabase Storage.
+  // Returns { url, path } on success, or throws on failure.
+  const uploadCustomerPhoto = useCallback(
+    async (file) => {
+      if (!file) return null;
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${userId}/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || 'image/jpeg',
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+      return { url: data.publicUrl, path };
+    },
+    [userId]
+  );
+
+  // Remove a customer photo from Supabase Storage (best-effort; ignores errors).
+  const deleteCustomerPhoto = useCallback(async (path) => {
+    if (!path) return;
+    try {
+      await supabase.storage.from(PHOTO_BUCKET).remove([path]);
+    } catch {
+      // Non-fatal: an orphaned file in storage isn't worth failing the UI over.
+    }
+  }, []);
+
+  const addCustomer = useCallback(
+    async (data) => {
+      const price = Number(data.price);
+      const paid = Number(data.paid);
+      const remaining_balance = price - paid;
+      const docRef = await addDoc(collection(db, 'users', userId, 'credits'), {
+        firstname: data.firstname,
+        lastname: data.lastname,
+        mobile_number: data.mobile_number || null,
+        product_name: data.product_name,
+        price,
+        paid,
+        remaining_balance,
+        date: data.date,
+        photo_url: data.photo_url || null,
+        photo_path: data.photo_path || null,
+        createdAt: serverTimestamp(),
+      });
+      return docRef;  // â† this is the only change
+    },
+    [userId]
+  );
+
+  const updateCustomer = useCallback(
+    async (id, data) => {
+      const price = Number(data.price);
+      const paid = Number(data.paid);
+      const remaining_balance = price - paid;
+      const updatePayload = {
+        firstname: data.firstname,
+        lastname: data.lastname,
+        mobile_number: data.mobile_number || null,
+        product_name: data.product_name,
+        price,
+        paid,
+        remaining_balance,
+        date: data.date,
+      };
+      // Only touch photo fields when explicitly provided, so a normal
+      // detail edit doesn't accidentally wipe out an existing photo.
+      if (data.photo_url !== undefined) updatePayload.photo_url = data.photo_url;
+      if (data.photo_path !== undefined) updatePayload.photo_path = data.photo_path;
+
+      await updateDoc(doc(db, 'users', userId, 'credits', id), updatePayload);
+    },
+    [userId]
+  );
+
+  const deleteCustomer = useCallback(
+    async (id) => {
+      const batch = writeBatch(db);
+      // Remove related payment history docs
+      const paymentsSnap = await getDocs(
+        collection(db, 'users', userId, 'payment_history')
+      );
+      paymentsSnap.docs
+        .filter((d) => d.data().credit_id === id)
+        .forEach((d) => batch.delete(d.ref));
+      batch.delete(doc(db, 'users', userId, 'credits', id));
+      await batch.commit();
+    },
+    [userId]
+  );
+
+  return {
+    customers,
+    loading,
+    addCustomer,
+    updateCustomer,
+    deleteCustomer,
+    uploadCustomerPhoto,
+    deleteCustomerPhoto,
+  };
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\usePayments.js ==
+
+import { useState, useEffect, useCallback } from 'react';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  writeBatch,
+  getDoc,
+} from 'firebase/firestore';
+import { db } from '../firebase';
+
+export function usePayments(userId) {
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setPayments([]);
+      setLoading(false);
+      return;
+    }
+    const q = query(
+      collection(db, 'users', userId, 'payment_history'),
+      orderBy('payment_date', 'desc')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setPayments(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, [userId]);
+
+  const addPayment = useCallback(
+    async (creditId, amount, paymentDate) => {
+      const amt = Number(amount);
+      const batch = writeBatch(db);
+
+      // Insert payment record
+      const payRef = doc(collection(db, 'users', userId, 'payment_history'));
+      batch.set(payRef, {
+        credit_id: creditId,
+        amount: amt,
+        payment_date: paymentDate,
+        createdAt: serverTimestamp(),
+      });
+
+      // Update credit totals
+      const creditRef = doc(db, 'users', userId, 'credits', creditId);
+      const creditSnap = await getDoc(creditRef);
+      const credit = creditSnap.data();
+      const newPaid = (credit.paid || 0) + amt;
+      const newBalance = credit.price - newPaid;
+      batch.update(creditRef, { paid: newPaid, remaining_balance: newBalance });
+
+      await batch.commit();
+    },
+    [userId]
+  );
+
+  const deletePayment = useCallback(
+    async (paymentId, creditId, amount) => {
+      const amt = Number(amount);
+      const batch = writeBatch(db);
+
+      batch.delete(doc(db, 'users', userId, 'payment_history', paymentId));
+
+      const creditRef = doc(db, 'users', userId, 'credits', creditId);
+      const creditSnap = await getDoc(creditRef);
+      const credit = creditSnap.data();
+      const newPaid = Math.max(0, (credit.paid || 0) - amt);
+      const newBalance = credit.price - newPaid;
+      batch.update(creditRef, { paid: newPaid, remaining_balance: newBalance });
+
+      await batch.commit();
+    },
+    [userId]
+  );
+
+  const updatePayment = useCallback(
+    async (paymentId, creditId, newAmount, newDate, oldAmount) => {
+      const newAmt = Number(newAmount);
+      const oldAmt = Number(oldAmount);
+      const diff = newAmt - oldAmt;
+      const batch = writeBatch(db);
+
+      batch.update(doc(db, 'users', userId, 'payment_history', paymentId), {
+        amount: newAmt,
+        payment_date: newDate,
+      });
+
+      const creditRef = doc(db, 'users', userId, 'credits', creditId);
+      const creditSnap = await getDoc(creditRef);
+      const credit = creditSnap.data();
+      const newPaid = (credit.paid || 0) + diff;
+      const newBalance = credit.price - newPaid;
+      batch.update(creditRef, { paid: newPaid, remaining_balance: newBalance });
+
+      await batch.commit();
+    },
+    [userId]
+  );
+
+  return { payments, loading, addPayment, deletePayment, updatePayment };
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\useTheme.js ==
+
+import { useState, useEffect } from 'react';
+
+export function useTheme() {
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    // Respect OS preference as default
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark((prev) => !prev);
+
+  return { isDark, toggleTheme };
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\utils\format.js ==
+
+export const formatCurrency = (amount) =>
+  `â‚±${Number(amount || 0).toLocaleString('en-PH')}`;
+
+export const formatDate = (dateStr) => {
+  if (!dateStr) return '';
+  // Add time to prevent timezone-shift issues
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  });
+};
+
+export const today = () => new Date().toISOString().split('T')[0];
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\utils\recentlyPaid.js ==
+
+// Shared "recently paid" tracker.
+// Marks which customers have received a payment TODAY, regardless of
+// whether that payment was added via Bulk Add or the Payment History tab.
+// Backed by localStorage so it's shared across tabs/components and persists
+// only for the current day.
+
+const STORAGE_KEY = 'recentlyPaid';
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+export function loadRecentlyPaid() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Set();
+    const { date, ids } = JSON.parse(raw);
+    // Discard if it was saved on a different day
+    if (date !== getTodayKey()) return new Set();
+    return new Set(ids);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveRecentlyPaid(set) {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ date: getTodayKey(), ids: [...set] })
+    );
+  } catch {
+    // localStorage unavailable Ã¢â‚¬â€ silently ignore
+  }
+}
+
+// Mark one or more customer ids as paid today. Returns the updated Set.
+export function markRecentlyPaid(ids) {
+  const list = Array.isArray(ids) ? ids : [ids];
+  const next = new Set([...loadRecentlyPaid(), ...list]);
+  saveRecentlyPaid(next);
+  return next;
+}
+
+// Remove one or more customer ids from the "recently paid" set. Call this
+// when a today-dated payment is deleted (or a customer record is removed)
+// so Bulk Add's "Paid this session" tag doesn't linger for a payment that
+// no longer exists. Returns the updated Set.
+export function unmarkRecentlyPaid(ids) {
+  const list = Array.isArray(ids) ? ids : [ids];
+  const next = loadRecentlyPaid();
+  list.forEach((id) => next.delete(id));
+  saveRecentlyPaid(next);
+  return next;
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\App.jsx ==
+
+import { useState } from 'react';
+import { useAuth } from './hooks/useAuth';
+import { useTheme } from './hooks/useTheme';
+import { useCustomers } from './hooks/useCustomers';
+import { usePayments } from './hooks/usePayments';
+
+import AuthPage from './components/auth/AuthPage';
+import Header from './components/layout/Header';
+import NavTabs from './components/layout/NavTabs';
+import AddCustomer from './components/tabs/AddCustomer';
+import ViewRecords from './components/tabs/ViewRecords';
+import Statistics from './components/tabs/Statistics';
+import PaymentHistory from './components/tabs/PaymentHistory';
+import BulkAdd from './components/tabs/BulkAdd';
+
+import styles from './App.module.css';
+
+export default function App() {
+  const { user, logout } = useAuth();
+  const {
+    customers,
+    loading: custLoading,
+    addCustomer,
+    updateCustomer,
+    deleteCustomer,
+    uploadCustomerPhoto,
+    deleteCustomerPhoto,
+  } = useCustomers(user?.uid);
+  const { payments, loading: payLoading, addPayment, updatePayment, deletePayment } =
+    usePayments(user?.uid);
+
+  // Default tab is 'view' (matching daily.php behavior)
+  const { isDark, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState('view');
+
+  // Still resolving auth state
+  if (user === undefined) {
+    return (
+      <div className={styles.fullLoading}>
+        <span className={styles.spinner} />
+        <p>Loadingâ€¦</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  const isLoading = custLoading || payLoading;
+
+  return (
+    <div className={styles.app}>
+      <Header user={user} onLogout={logout} isDark={isDark} onToggleTheme={toggleTheme} />
+      <NavTabs activeTab={activeTab} onChange={setActiveTab} />
+
+      <main className={styles.main}>
+        {isLoading ? (
+          <div className={styles.innerLoading}>
+            <span className={styles.spinner} />
+            <p>Loading your dataâ€¦</p>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'add' && (
+              <AddCustomer
+                onAdd={addCustomer}
+                onAddPayment={addPayment}
+                onUploadPhoto={uploadCustomerPhoto}
+              />
+            )}
+            {activeTab === 'view' && (
+              <ViewRecords
+                customers={customers}
+                payments={payments}
+                onUpdate={updateCustomer}
+                onDelete={deleteCustomer}
+                onUploadPhoto={uploadCustomerPhoto}
+                onDeletePhoto={deleteCustomerPhoto}
+              />
+            )}
+            {activeTab === 'bulk' && (
+              <BulkAdd
+                customers={customers}
+                onBulkAdd={async (ids, amount) => {
+                  // Add a payment for each selected customer using today's date
+                  const { today } = await import('./utils/format');
+                  for (const id of ids) {
+                    // eslint-disable-next-line no-await-in-loop
+                    await addPayment(id, amount, today());
+                  }
+                }}
+              />
+            )}
+            {activeTab === 'stats' && <Statistics customers={customers} />}
+            {activeTab === 'payments' && (
+              <PaymentHistory
+                customers={customers}
+                payments={payments}
+                onAdd={addPayment}
+                onUpdate={updatePayment}
+                onDelete={deletePayment}
+              />
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\firebase.js ==
+
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyBlRFG9abKDXh62o45fCS8gADypNTfO4_o',
+  authDomain: 'creditmanagement-e7a13.firebaseapp.com',
+  projectId: 'creditmanagement-e7a13',
+  storageBucket: 'creditmanagement-e7a13.firebasestorage.app',
+  messagingSenderId: '780956564638',
+  appId: '1:780956564638:web:6f3c22bc99c158bf748f8f',
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export default app;
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\main.jsx ==
+
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.jsx';
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\supabase.js ==
+
+import { createClient } from "@supabase/supabase-js";
+
+// Grab these from your new project's Settings > API in the Supabase Dashboard
+const supabaseUrl = "https://kolsrsmzhpnwznducctd.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvbHNyc216aHBud3puZHVjY3RkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3OTI5MTAsImV4cCI6MjEwMDM2ODkxMH0.C6VErDdbuR4Mf5u9SZIm1yUf6fdP2tMv54YvPYqEB1E";
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

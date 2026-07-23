@@ -1,0 +1,301 @@
+.header {
+  background: linear-gradient(135deg, #1E4482 0%, #2D68C4 60%, #4facfe 100%);
+  color: #fff;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+/* ── Left branding ── */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.icon {
+  font-size: 1.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+/* ── Right / menu wrapper ── */
+.right {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+}
+
+/* ── Avatar trigger button ── */
+.avatarBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 99px;
+  padding: 5px 12px 5px 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.15s ease;
+   margin-left: auto; /* 🔥 ADD THIS */
+}
+
+.avatarBtn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.avatarBtn:active {
+  transform: scale(0.97);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1E4482;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.chevron {
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown panel ── */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 240px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 100;
+
+  /* Hidden state */
+  opacity: 0;
+  transform: scale(0.95) translateY(-6px);
+  transform-origin: top right;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+/* ── Dropdown – profile header ── */
+.dropdownProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.dropdownAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2D68C4, #4facfe);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.dropdownUserInfo {
+  overflow: hidden;
+}
+
+.dropdownEmail {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownRole {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+/* ── Dropdown – date meta ── */
+.dropdownMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Dropdown – dark mode row ── */
+.dropdownRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ← This forces left and right alignment */
+  padding: 10px 16px;
+  gap: 10px;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  /* flex: 1;         */
+  /* min-width: 0; */
+}
+
+.rowIcon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.rowLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* ── Toggle switch ── */
+.toggleSwitch {
+  /* Remove margin-left: auto and duplicate flex-shrink */
+  flex-shrink: 0;
+  /* Keep other toggle styles as before */
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--color-border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+
+.toggleOn {
+  background: var(--color-primary);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(18px);
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0;
+}
+
+/* ── Logout button ── */
+.logoutItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.logoutItem:hover {
+  background: var(--color-danger-light);
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .header {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 1.15rem;
+  }
+
+
+   .subtitle {
+    font-size: 0.7rem;   /* slightly smaller on mobile */
+    opacity: 0.75;
+    margin-top: 2px;
+  }
+
+  .dropdown {
+    right: 0;
+    min-width: 220px;
+  }
+
+  .right {
+    align-self: flex-end;
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+  }
+
+  .dropdownRow {
+    justify-content: space-between;
+  }
+}

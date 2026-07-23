@@ -1,0 +1,291 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--card-bg, #fff);
+  color: var(--text-color, inherit);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  opacity: 1;
+}
+
+.body {
+  padding: 20px;
+}
+
+.photoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.photo {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border-color, rgba(128, 128, 128, 0.25));
+  margin-bottom: 12px;
+}
+
+.photoFallback {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg, #4f46e5);
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.name {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.mobile {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--subtle-bg, rgba(128, 128, 128, 0.08));
+  border-radius: 8px;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detailValue {
+  font-weight: 600;
+}
+
+.balanceNeg {
+  color: #dc2626;
+}
+
+.balancePos {
+  color: #16a34a;
+}
+
+.historySection {
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+  padding-top: 14px;
+}
+
+.historyTitle {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.noPayments {
+  opacity: 0.65;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.paymentList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.paymentItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-color, rgba(128, 128, 128, 0.2));
+}
+
+.payAmt {
+  font-weight: 600;
+}
+
+.payDate {
+  opacity: 0.7;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+}
+
+
+/* =====================================================
+   THEME SUPPORT
+===================================================== */
+
+:root{
+    --customer-modal-bg:#ffffff;
+    --customer-card-bg:#f8fafc;
+    --customer-text:#111827;
+    --customer-muted:#64748b;
+    --customer-border:#e5e7eb;
+}
+
+.dark{
+    --customer-modal-bg:#0f172a;
+    --customer-card-bg:#1e293b;
+    --customer-text:#f8fafc;
+    --customer-muted:#94a3b8;
+    --customer-border:#334155;
+}
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.modal{
+    background:var(--customer-modal-bg);
+    color:var(--customer-text);
+    transition:all .25s ease;
+}
+
+.modalHeader{
+    border-bottom:1px solid var(--customer-border);
+}
+
+.modalActions{
+    border-top:1px solid var(--customer-border);
+}
+
+.closeBtn{
+    color:var(--customer-muted);
+}
+
+.closeBtn:hover{
+    background:var(--customer-card-bg);
+}
+
+/* =====================================================
+   PROFILE
+===================================================== */
+
+.name{
+    color:var(--customer-text);
+}
+
+.mobile{
+    color:var(--customer-muted);
+}
+
+.photo{
+    border:3px solid var(--customer-border);
+}
+
+/* =====================================================
+   DETAILS
+===================================================== */
+
+.detailItem{
+    background:var(--customer-card-bg);
+    border:1px solid var(--customer-border);
+    transition:.2s;
+}
+
+.detailItem:hover{
+    transform:translateY(-2px);
+}
+
+.detailLabel{
+    color:var(--customer-muted);
+}
+
+.detailValue{
+    color:var(--customer-text);
+}
+
+/* =====================================================
+   PAYMENT HISTORY
+===================================================== */
+
+.historySection{
+    border-top:1px solid var(--customer-border);
+}
+
+.historyTitle{
+    color:var(--customer-text);
+}
+
+.paymentItem{
+    border-bottom:1px dashed var(--customer-border);
+}
+
+.payAmt{
+    color:var(--customer-text);
+}
+
+.payDate{
+    color:var(--customer-muted);
+}
+
+.noPayments{
+    color:var(--customer-muted);
+}

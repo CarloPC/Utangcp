@@ -1,0 +1,141 @@
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 36px;
+}
+
+.card {
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 26px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.cardValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.cardLabel {
+  font-size: 0.875rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.debtorsSection {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.subHeading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+}
+
+.table th,
+.table td {
+  padding: 13px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.table th {
+  background: linear-gradient(135deg, #2D3748, #1A2436);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+}
+
+.rank {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  width: 40px;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.debt {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .cardValue {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

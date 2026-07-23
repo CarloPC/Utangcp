@@ -1,0 +1,52 @@
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 22px;
+}
+
+.photoRow { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.photoPreview { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--color-border); }
+.photoPlaceholder { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--color-surface-2); border: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 0.75rem; }
+.photoActions { display: flex; flex-direction: column; gap: 6px; }
+
+.formCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 28px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .grid3,
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}

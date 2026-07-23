@@ -1,0 +1,99 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #1E4482 0%, #2D68C4 50%, #4facfe 100%);
+}
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 44px 36px 36px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.logo {
+  margin-bottom: 16px;
+}
+
+.logoIcon {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+}
+
+.errorBox {
+  background: var(--color-danger-light);
+  color: var(--color-danger-text);
+  border: 1px solid #FCA5A5;
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.toggle {
+  margin-top: 24px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.toggleBtn:hover {
+  color: var(--color-primary-hover);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 32px 20px 28px;
+  }
+}
