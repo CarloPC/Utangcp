@@ -190,7 +190,7 @@
     --customer-border:#e5e7eb;
 }
 
-.dark{
+:global(html[data-theme="dark"]){
     --customer-modal-bg:#0f172a;
     --customer-card-bg:#1e293b;
     --customer-text:#f8fafc;

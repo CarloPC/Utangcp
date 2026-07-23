@@ -127,7 +127,6 @@ function EditModal({ customer, onSave, onClose, onUploadPhoto, onDeletePhoto }) 
                   id="edit_photo"
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={handlePhotoChange}
                 />
                 {photoError && <span className={styles.photoError}>{photoError}</span>}

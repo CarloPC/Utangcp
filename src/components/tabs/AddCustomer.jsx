@@ -147,7 +147,6 @@ export default function AddCustomer({ onAdd, onAddPayment, onUploadPhoto }) {
                   id="photo"
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={handlePhotoChange}
                   className={styles.photoInput}
                 />

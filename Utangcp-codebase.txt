@@ -944,7 +944,7 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
   );
 }
 
-== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\Customerprofilemodal.jsx ==
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\CustomerProfileModal.jsx ==
 
 import { formatCurrency, formatDate } from '../../utils/format';
 import styles from './CustomerProfileModal.module.css';
@@ -1084,7 +1084,7 @@ function EditPaymentModal({ payment, customers, onSave, onClose }) {
 
         <form onSubmit={handleSubmit} className={styles.editForm}>
           <div className={styles.group}>
-            <label className="label">New Payment Amount (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â±)</label>
+            <label className="label">New Payment Amount </label>
             <input className="input" type="number" min="1" required
               value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
@@ -1278,7 +1278,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
             </div>
 
             <div className={styles.group}>
-              <label className="label">Payment Amount (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â±)</label>
+              <label className="label">Payment Amount </label>
               <input
                 className="input"
                 type="number"
