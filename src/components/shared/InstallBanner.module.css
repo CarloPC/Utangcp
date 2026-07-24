@@ -1,0 +1,44 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.text strong {
+  display: block;
+  font-size: 14px;
+}
+
+.text p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  opacity: 0.75;
+}
+
+.dismissBtn {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.dismissBtn:hover {
+  opacity: 1;
+}

@@ -253,3 +253,54 @@ textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
 }
+
+
+/* ============================================================
+   Add this block to src/index.css (or wherever your global
+   styles live). It's what makes an installed PWA stop feeling
+   like "a website in a box" and start feeling like a real app.
+   ============================================================ */
+
+html,
+body {
+  /* Stop the rubber-band overscroll that reveals white space at
+     the top/bottom when a user drags past the content edge. */
+  overscroll-behavior-y: none;
+  /* Remove the grey flash Android shows when you tap a button/link. */
+  -webkit-tap-highlight-color: transparent;
+  /* Prevent iOS from auto-zooming when a text input is focused
+     (only kicks in if inputs are below 16px font-size, but this
+     is a safe belt-and-suspenders rule). */
+  touch-action: manipulation;
+}
+
+body {
+  /* Push content below the notch / status bar and above the
+     home-indicator on iOS when running in standalone mode. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* If your Header is meant to sit flush at the very top (common
+   app pattern), apply the safe-area padding there instead of on
+   body, and let body have 0. Example: */
+/*
+.header {
+  padding-top: calc(12px + env(safe-area-inset-top));
+}
+*/
+
+/* Disable text selection on interactive chrome (nav, buttons) so
+   long-presses don't trigger the iOS text-selection magnifier. */
+nav,
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent the browser's default pull-to-refresh on Chrome/Android
+   for scrollable containers you control yourself. Apply this class
+   to your top-level scroll container if you build custom
+   pull-to-refresh later; otherwise the html/body rule above covers it. */
