@@ -35,25 +35,35 @@ export default function App() {
   const { isDark, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('view');
 
-  // Tracks whether the user JUST logged in this tab session, so the
-  // install popup only shows once right after login — not on every
-  // reload while already signed in.
-  const [justLoggedIn, setJustLoggedIn] = useState(false);
+  // Controls the install popup — opened automatically ~1.2s after a
+  // genuinely fresh login, via the Header's "Install App" row.
+  //
+  // Because Firebase persists the session, a page REFRESH also makes
+  // `user` go from undefined -> the same logged-in object, which looks
+  // identical to a fresh login from this component's perspective. To
+  // tell them apart, we mark "already shown" in sessionStorage the
+  // first time it displays. sessionStorage survives refreshes (so it
+  // won't show again on reload) but is cleared on explicit logout (so
+  // the next real login shows it again). Closing the tab also clears
+  // sessionStorage, so a brand new tab session counts as fresh too.
+  const [showInstallModal, setShowInstallModal] = useState(false);
   const prevUserRef = useRef(undefined);
 
   useEffect(() => {
     const prevUser = prevUserRef.current;
+    prevUserRef.current = user;
+
     if (!prevUser && user) {
       if (!sessionStorage.getItem('installPopupShown')) {
-        setJustLoggedIn(true);
         sessionStorage.setItem('installPopupShown', '1');
+        const timer = setTimeout(() => setShowInstallModal(true), 1200);
+        return () => clearTimeout(timer);
       }
     }
+
     if (!user) {
       sessionStorage.removeItem('installPopupShown');
-      setJustLoggedIn(false);
     }
-    prevUserRef.current = user;
   }, [user]);
 
   // Still resolving auth state
@@ -80,7 +90,13 @@ export default function App() {
   return (
     <div className={styles.app}>
       <OfflineBanner />
-      <Header user={user} onLogout={logout} isDark={isDark} onToggleTheme={toggleTheme} />
+      <Header
+        user={user}
+        onLogout={logout}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onOpenInstall={() => setShowInstallModal(true)}
+      />
 
       {/* On desktop (>1340px) this renders in normal flow, right where your
           original top nav sat. On mobile (<=1340px) NavTabs.module.css
@@ -141,7 +157,7 @@ export default function App() {
         )}
       </main>
 
-      <InstallPopup justLoggedIn={justLoggedIn} />
+      <InstallPopup open={showInstallModal} onClose={() => setShowInstallModal(false)} />
     </div>
   );
 }

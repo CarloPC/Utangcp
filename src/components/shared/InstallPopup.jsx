@@ -3,36 +3,30 @@ import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import styles from './InstallPopup.module.css';
 
 /**
- * Shows an install popup ONLY right after a fresh login — not on every
- * page load/refresh while already logged in.
- *
- * How "just logged in" is detected: the parent (App.jsx) passes
- * `justLoggedIn` — a flag it flips true the moment `user` goes from
- * null/undefined to a real user object, then resets on next render.
- * See the wiring note in the setup guide.
+ * Externally controlled — App.jsx decides when to open it, either:
+ *  - automatically, ~1.2s after every fresh login, or
+ *  - manually, via the "Install App" row in the Header dropdown
+ * Both paths share this one component/hook instance so state (canInstall,
+ * isInstalled) is always accurate regardless of which path opened it.
  */
-export default function InstallPopup({ justLoggedIn }) {
+export default function InstallPopup({ open, onClose }) {
   const { canInstall, isInstalled, isIOSInstallable, promptInstall } = useInstallPrompt();
-  const [visible, setVisible] = useState(false);
   const [closing, setClosing] = useState(false);
 
+  // Auto-close if the app gets installed while this happens to be open.
   useEffect(() => {
-    if (!justLoggedIn) return;
-    if (isInstalled) return;
-    if (!canInstall && !isIOSInstallable) return;
+    if (isInstalled && open) onClose();
+  }, [isInstalled, open, onClose]);
 
-    // Small delay so it doesn't compete with the dashboard's first paint.
-    const timer = setTimeout(() => setVisible(true), 1200);
-    return () => clearTimeout(timer);
-  }, [justLoggedIn, isInstalled, canInstall, isIOSInstallable]);
-
-  if (!visible) return null;
+  if (!open) return null;
+  if (isInstalled) return null;
+  if (!canInstall && !isIOSInstallable) return null;
 
   const close = () => {
     setClosing(true);
     setTimeout(() => {
-      setVisible(false);
       setClosing(false);
+      onClose();
     }, 180);
   };
 

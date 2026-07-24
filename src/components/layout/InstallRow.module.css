@@ -1,0 +1,26 @@
+.mobileOnly {
+  display: none;
+}
+
+/* Same breakpoint your App.module.css already uses for mobile layout. */
+@media (max-width: 1340px) {
+  .mobileOnly {
+    display: block;
+  }
+}
+
+.installBtn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.installBtn:active {
+  opacity: 0.85;
+}

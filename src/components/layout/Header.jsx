@@ -1,9 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import styles from './Header.module.css';
+import installStyles from './InstallRow.module.css';
 
-export default function Header({ user, onLogout, isDark, onToggleTheme }) {
+export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenInstall }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const { canInstall, isInstalled, isIOSInstallable } = useInstallPrompt();
+  const showInstallRow = !isInstalled && (canInstall || isIOSInstallable);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -112,6 +116,31 @@ export default function Header({ user, onLogout, isDark, onToggleTheme }) {
               <span className={styles.toggleThumb} />
             </button>
           </div>
+
+          {/* Install App — dedicated, always-available entry point.
+              Mobile-only (see InstallRow.module.css); hides itself once
+              the app is actually installed. */}
+          {showInstallRow && (
+            <div className={installStyles.mobileOnly}>
+              <div className={styles.divider} />
+              <div className={styles.dropdownRow}>
+                <div className={styles.rowLeft}>
+                  <span className={styles.rowIcon} aria-hidden="true">📲</span>
+                  <span className={styles.rowLabel}>Install App</span>
+                </div>
+                <button
+                  type="button"
+                  className={installStyles.installBtn}
+                  onClick={() => {
+                    setOpen(false);
+                    onOpenInstall();
+                  }}
+                >
+                  Install
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className={styles.divider} />
 

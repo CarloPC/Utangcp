@@ -255,14 +255,120 @@ function firebaseErrorMessage(code) {
   return map[code] || `Something went wrong (${code || 'unknown'}). Please try again.`;
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\auth\AuthPage.module.css ==
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #1E4482 0%, #2D68C4 50%, #4facfe 100%);
+}
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 44px 36px 36px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.logo {
+  margin-bottom: 16px;
+}
+
+.logoIcon {
+  font-size: 2.8rem;
+  line-height: 1;
+}
+
+.title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  margin-bottom: 28px;
+}
+
+.errorBox {
+  background: var(--color-danger-light);
+  color: var(--color-danger-text);
+  border: 1px solid #FCA5A5;
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+  margin-top: 4px;
+}
+
+.toggle {
+  margin-top: 24px;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.toggleBtn:hover {
+  color: var(--color-primary-hover);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 32px 20px 28px;
+  }
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\Header.jsx ==
 
 import { useState, useRef, useEffect } from 'react';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import styles from './Header.module.css';
+import installStyles from './InstallRow.module.css';
 
-export default function Header({ user, onLogout, isDark, onToggleTheme }) {
+export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenInstall }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const { canInstall, isInstalled, isIOSInstallable } = useInstallPrompt();
+  const showInstallRow = !isInstalled && (canInstall || isIOSInstallable);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -372,6 +478,31 @@ export default function Header({ user, onLogout, isDark, onToggleTheme }) {
             </button>
           </div>
 
+          {/* Install App â€” dedicated, always-available entry point.
+              Mobile-only (see InstallRow.module.css); hides itself once
+              the app is actually installed. */}
+          {showInstallRow && (
+            <div className={installStyles.mobileOnly}>
+              <div className={styles.divider} />
+              <div className={styles.dropdownRow}>
+                <div className={styles.rowLeft}>
+                  <span className={styles.rowIcon} aria-hidden="true">ðŸ“²</span>
+                  <span className={styles.rowLabel}>Install App</span>
+                </div>
+                <button
+                  type="button"
+                  className={installStyles.installBtn}
+                  onClick={() => {
+                    setOpen(false);
+                    onOpenInstall();
+                  }}
+                >
+                  Install
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className={styles.divider} />
 
           {/* Logout */}
@@ -403,16 +534,394 @@ export default function Header({ user, onLogout, isDark, onToggleTheme }) {
   );
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\Header.module.css ==
+
+.header {
+  background: linear-gradient(135deg, #1E4482 0%, #2D68C4 60%, #4facfe 100%);
+  color: #fff;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+
+/* â”€â”€ Left branding â”€â”€ */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.icon {
+  font-size: 1.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+/* â”€â”€ Right / menu wrapper â”€â”€ */
+.right {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+}
+
+/* â”€â”€ Avatar trigger button â”€â”€ */
+.avatarBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 99px;
+  padding: 5px 12px 5px 5px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.15s ease;
+   margin-left: auto; /* ðŸ”¥ ADD THIS */
+}
+
+.avatarBtn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.avatarBtn:active {
+  transform: scale(0.97);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1E4482;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.chevron {
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* â”€â”€ Dropdown panel â”€â”€ */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 240px;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 100;
+
+  /* Hidden state */
+  opacity: 0;
+  transform: scale(0.95) translateY(-6px);
+  transform-origin: top right;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+
+/* â”€â”€ Dropdown â€“ profile header â”€â”€ */
+.dropdownProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.dropdownAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2D68C4, #4facfe);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.dropdownUserInfo {
+  overflow: hidden;
+}
+
+.dropdownEmail {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdownRole {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+/* â”€â”€ Dropdown â€“ date meta â”€â”€ */
+.dropdownMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* â”€â”€ Dropdown â€“ dark mode row â”€â”€ */
+.dropdownRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* â† This forces left and right alignment */
+  padding: 10px 16px;
+  gap: 10px;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  /* flex: 1;         */
+  /* min-width: 0; */
+}
+
+.rowIcon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.rowLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+/* â”€â”€ Toggle switch â”€â”€ */
+.toggleSwitch {
+  /* Remove margin-left: auto and duplicate flex-shrink */
+  flex-shrink: 0;
+  /* Keep other toggle styles as before */
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--color-border);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+
+.toggleOn {
+  background: var(--color-primary);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(18px);
+}
+
+/* â”€â”€ Divider â”€â”€ */
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 0;
+}
+
+/* â”€â”€ Logout button â”€â”€ */
+.logoutItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-danger);
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.logoutItem:hover {
+  background: var(--color-danger-light);
+}
+
+/* â”€â”€ Responsive â”€â”€ */
+@media (max-width: 600px) {
+  .header {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 1.15rem;
+  }
+
+
+   .subtitle {
+    font-size: 0.7rem;   /* slightly smaller on mobile */
+    opacity: 0.75;
+    margin-top: 2px;
+  }
+
+  .dropdown {
+    right: 0;
+    min-width: 220px;
+  }
+
+  .right {
+    align-self: flex-end;
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+  }
+
+  .dropdownRow {
+    justify-content: space-between;
+  }
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\InstallRow.module.css ==
+
+.mobileOnly {
+  display: none;
+}
+
+/* Same breakpoint your App.module.css already uses for mobile layout. */
+@media (max-width: 1340px) {
+  .mobileOnly {
+    display: block;
+  }
+}
+
+.installBtn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.installBtn:active {
+  opacity: 0.85;
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\NavTabs.jsx ==
 
 import styles from './NavTabs.module.css';
 
 const TABS = [
-  { id: 'view', label: 'View Records' },
-  { id: 'add', label: 'Add Customer' },
-  { id: 'bulk', label: 'Bulk Add' },
-  { id: 'stats', label: 'Statistics' },
-  { id: 'payments', label: 'Payment History' },
+  {
+    id: 'view',
+    label: 'Records',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 6h16M4 12h16M4 18h10" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'add',
+    label: 'Add',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'bulk',
+    label: 'Bulk',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path
+          d="M9 12l2 2 4-4M5 6h14a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: 'stats',
+    label: 'Stats',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 20V10M12 20V4M20 20v-7" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'payments',
+    label: 'Payments',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="6" width="18" height="13" rx="2" />
+        <path d="M3 10h18" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
 export default function NavTabs({ activeTab, onChange }) {
@@ -426,11 +935,119 @@ export default function NavTabs({ activeTab, onChange }) {
           aria-selected={activeTab === tab.id}
           role="tab"
         >
-          {tab.label}
+          <span className={styles.icon}>{tab.icon}</span>
+          <span className={styles.label}>{tab.label}</span>
         </button>
       ))}
     </nav>
   );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\layout\NavTabs.module.css ==
+
+/* ============================================================
+   Desktop / PC default: normal top nav row, same as your
+   original NavTabs â€” icons hidden, just labels, in-flow (not
+   fixed), sitting under the Header like before.
+   ============================================================ */
+
+.nav {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  gap: 8px;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--color-text, inherit);
+}
+
+.tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Icons are mobile-only â€” desktop keeps your original text-only look. */
+.icon {
+  display: none;
+}
+
+.label {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0.01em;
+}
+
+/* ============================================================
+   Mobile: fixed bottom tab bar with icons, matching your
+   existing App.module.css mobile breakpoint (max-width: 1340px)
+   so both switch together.
+   ============================================================ */
+@media (max-width: 1340px) {
+  .nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    justify-content: space-around;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: none;
+    border-top: 1px solid var(--color-border);
+
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .tab {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 4px 6px;
+    border-bottom: none;
+    font-size: 10.5px;
+  }
+
+  .tab:active {
+    transform: scale(0.94);
+  }
+
+  .icon {
+    display: flex;
+    width: 22px;
+    height: 22px;
+  }
+
+  .icon svg {
+    width: 100%;
+    height: 100%;
+  }
 }
 
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\Alert.jsx ==
@@ -458,6 +1075,55 @@ export default function Alert({ type = 'success', message, onClose, autoDismiss 
   );
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\Alert.module.css ==
+
+.alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+  animation: slideIn 0.25s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.success {
+  background: var(--color-success-light);
+  color: var(--color-success-text);
+  border: 1px solid var(--color-success-border);
+}
+
+.error {
+  background: var(--color-danger-light);
+  color: var(--color-danger-text);
+  border: 1px solid #FCA5A5;
+}
+
+.close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: inherit;
+  opacity: 0.7;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.close:hover {
+  opacity: 1;
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\ConfirmModal.jsx ==
 
 import styles from './ConfirmModal.module.css';
@@ -482,6 +1148,369 @@ export default function ConfirmModal({ title, message, onConfirm, onCancel, load
       </div>
     </div>
   );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\ConfirmModal.module.css ==
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 32px 28px 28px;
+  max-width: 420px;
+  width: 100%;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 10px;
+}
+
+.message {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\InstallBanner.jsx ==
+
+import { useState } from 'react';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import styles from './InstallBanner.module.css';
+
+export default function InstallBanner() {
+  const { canInstall, isInstalled, isIOSInstallable, promptInstall } = useInstallPrompt();
+  const [dismissed, setDismissed] = useState(
+    () => sessionStorage.getItem('installBannerDismissed') === '1'
+  );
+
+  if (isInstalled || dismissed) return null;
+  if (!canInstall && !isIOSInstallable) return null;
+
+  const dismiss = () => {
+    setDismissed(true);
+    sessionStorage.setItem('installBannerDismissed', '1');
+  };
+
+  return (
+    <div className={styles.banner} role="status">
+      <span className={styles.icon}>ðŸ“²</span>
+      <div className={styles.text}>
+        {canInstall ? (
+          <>
+            <strong>Install Credit Management</strong>
+            <p>Add it to your home screen for quick, full-screen access.</p>
+          </>
+        ) : (
+          <>
+            <strong>Install this app</strong>
+            <p>Tap Share, then "Add to Home Screen".</p>
+          </>
+        )}
+      </div>
+      {canInstall && (
+        <button type="button" className="btn btn-primary" onClick={promptInstall}>
+          Install
+        </button>
+      )}
+      <button type="button" className={styles.dismissBtn} onClick={dismiss} aria-label="Dismiss">
+        âœ•
+      </button>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\InstallBanner.module.css ==
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+}
+
+.text strong {
+  display: block;
+  font-size: 14px;
+}
+
+.text p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  opacity: 0.75;
+}
+
+.dismissBtn {
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  opacity: 0.5;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.dismissBtn:hover {
+  opacity: 1;
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\InstallPopup.jsx ==
+
+import { useEffect, useState } from 'react';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import styles from './InstallPopup.module.css';
+
+/**
+ * Externally controlled â€” App.jsx decides when to open it, either:
+ *  - automatically, ~1.2s after every fresh login, or
+ *  - manually, via the "Install App" row in the Header dropdown
+ * Both paths share this one component/hook instance so state (canInstall,
+ * isInstalled) is always accurate regardless of which path opened it.
+ */
+export default function InstallPopup({ open, onClose }) {
+  const { canInstall, isInstalled, isIOSInstallable, promptInstall } = useInstallPrompt();
+  const [closing, setClosing] = useState(false);
+
+  // Auto-close if the app gets installed while this happens to be open.
+  useEffect(() => {
+    if (isInstalled && open) onClose();
+  }, [isInstalled, open, onClose]);
+
+  if (!open) return null;
+  if (isInstalled) return null;
+  if (!canInstall && !isIOSInstallable) return null;
+
+  const close = () => {
+    setClosing(true);
+    setTimeout(() => {
+      setClosing(false);
+      onClose();
+    }, 180);
+  };
+
+  const handleInstall = async () => {
+    await promptInstall();
+    close();
+  };
+
+  return (
+    <div className={`${styles.overlay} ${closing ? styles.closing : ''}`} onClick={close}>
+      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.badge}>ðŸ’³</div>
+        <h2 className={styles.title}>Install Credit Management</h2>
+        <p className={styles.subtitle}>
+          {canInstall
+            ? 'Add it to your home screen for faster, full-screen access â€” no browser bar, no address bar.'
+            : 'Tap the Share icon in Safari, then "Add to Home Screen".'}
+        </p>
+
+        <div className={styles.actions}>
+          {canInstall && (
+            <button type="button" className="btn btn-primary" onClick={handleInstall}>
+              Install App
+            </button>
+          )}
+          <button type="button" className={styles.laterBtn} onClick={close}>
+            Maybe later
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\InstallPopup.module.css ==
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  animation: fadeIn 0.18s ease;
+}
+
+.overlay.closing {
+  animation: fadeOut 0.18s ease forwards;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  color: var(--color-text, inherit);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: 24px 22px calc(22px + env(safe-area-inset-bottom));
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Desktop / wide screens: center it as a normal modal instead of a bottom sheet. */
+@media (min-width: 640px) {
+  .overlay {
+    align-items: center;
+  }
+  .sheet {
+    border-radius: var(--radius-lg);
+  }
+}
+
+.badge {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.laterBtn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 13.5px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\OfflineBanner.jsx ==
+
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import styles from './OfflineBanner.module.css';
+
+export default function OfflineBanner() {
+  const isOnline = useOnlineStatus();
+
+  if (isOnline) return null;
+
+  return (
+    <div className={styles.banner} role="alert">
+      <span className={styles.dot} />
+      No internet connection â€” changes won't save until you're back online.
+    </div>
+  );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\shared\OfflineBanner.module.css ==
+
+.banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  background: #dc2626;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\AddCustomer.jsx ==
@@ -714,6 +1743,61 @@ export default function AddCustomer({ onAdd, onAddPayment, onUploadPhoto }) {
   );
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\AddCustomer.module.css ==
+
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 22px;
+}
+
+.photoRow { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.photoPreview { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 1px solid var(--color-border); }
+.photoPlaceholder { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--color-surface-2); border: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 0.75rem; }
+.photoActions { display: flex; flex-direction: column; gap: 6px; }
+
+.formCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 28px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .grid3,
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\BulkAdd.jsx ==
 
 import { useState, useMemo } from 'react';
@@ -943,6 +2027,399 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
   );
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\BulkAdd.module.css ==
+
+/* â”€â”€ Wrapper â”€â”€ */
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 22px;
+}
+
+/* â”€â”€ Shared card base â”€â”€ */
+.formCard,
+.listCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+}
+
+.formCard {
+  padding: 24px 28px;
+}
+
+.listCard {
+  overflow: hidden;
+}
+
+.formTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+/* â”€â”€ Amount row â”€â”€ */
+.amountRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+/* â”€â”€ Summary box â”€â”€ */
+.summaryBox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--color-primary-light);
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  animation: fadeSlide 0.2s ease;
+}
+
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.summaryLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summaryValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.summaryMeta {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+/* â”€â”€ Toolbar â”€â”€ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.toolbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* â”€â”€ Selected badge â”€â”€ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 999px;
+  animation: popIn 0.15s ease;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* â”€â”€ Search â”€â”€ */
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 10px;
+  color: var(--color-text-muted);
+  display: flex;
+  pointer-events: none;
+}
+
+.searchInput {
+  padding: 7px 12px 7px 32px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface-2);
+  outline: none;
+  width: 200px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchInput:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(45, 104, 196, 0.12);
+}
+
+.searchInput::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* â”€â”€ List body â”€â”€ */
+.listBody {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 20px;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* â”€â”€ List items â”€â”€ */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  user-select: none;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item:hover {
+  background: var(--color-surface);
+}
+
+.itemChecked {
+  background: var(--color-primary-light) !important;
+}
+
+.itemChecked:hover {
+  background: #dbeafe !important;
+}
+
+/* â”€â”€ Recently paid green indicator (session-only) â”€â”€ */
+.itemRecentlyPaid {
+  /* background: #f0fdf4 !important; */
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-left: 3px solid #22c55e;
+}
+
+.itemRecentlyPaid:hover {
+  /* background: #dcfce7 !important; */
+  background: rgba(34, 197, 94, 0.15) !important;
+}
+
+/* itemChecked wins over itemRecentlyPaid when both are active */
+.itemChecked.itemRecentlyPaid {
+  /* background: #d1fae5 !important; */
+  background: rgba(34, 197, 94, 0.12) !important;
+  border-left: 3px solid #22c55e;
+}
+
+.itemChecked.itemRecentlyPaid:hover {
+  background: rgba(34, 197, 94, 0.2) !important;
+}
+
+/* â”€â”€ Paid tag â”€â”€ */
+.paidTag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  /* color: #16a34a; */
+  color: #22c55e;
+  /* background: #dcfce7; */
+  background: rgba(34, 197, 94, 0.15);
+  /* border: 1px solid #bbf7d0; */
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* â”€â”€ Custom checkbox â”€â”€ */
+.checkboxWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* â”€â”€ Customer info â”€â”€ */
+.customerInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.customerName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.productTag {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* â”€â”€ Balance â”€â”€ */
+.balanceWrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.balanceLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.balanceValue {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-danger);
+}
+
+/* â”€â”€ Footer â”€â”€ */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px 0 0;
+}
+
+.footerInfo {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.footerInfo strong {
+  color: var(--color-text);
+}
+
+.footerHint {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* â”€â”€ Responsive â”€â”€ */
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .amountRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .group {
+    min-width: unset;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .toolbarLeft,
+  .toolbarRight {
+    width: 100%;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+
+  .searchWrap {
+    flex: 1;
+  }
+
+  .toolbarRight {
+    flex-wrap: nowrap;
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .footer .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\CustomerProfileModal.jsx ==
 
 import { formatCurrency, formatDate } from '../../utils/format';
@@ -1033,6 +2510,300 @@ export default function CustomerProfileModal({ customer, payments, onClose, onEd
       </div>
     </div>
   );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\CustomerProfileModal.module.css ==
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--card-bg, #fff);
+  color: var(--text-color, inherit);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.closeBtn:hover {
+  opacity: 1;
+}
+
+.body {
+  padding: 20px;
+}
+
+.photoSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.photo {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border-color, rgba(128, 128, 128, 0.25));
+  margin-bottom: 12px;
+}
+
+.photoFallback {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg, #4f46e5);
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.name {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.mobile {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--subtle-bg, rgba(128, 128, 128, 0.08));
+  border-radius: 8px;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.detailValue {
+  font-weight: 600;
+}
+
+.balanceNeg {
+  color: #dc2626;
+}
+
+.balancePos {
+  color: #16a34a;
+}
+
+.historySection {
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+  padding-top: 14px;
+}
+
+.historyTitle {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.noPayments {
+  opacity: 0.65;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.paymentList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.paymentItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-color, rgba(128, 128, 128, 0.2));
+}
+
+.payAmt {
+  font-weight: 600;
+}
+
+.payDate {
+  opacity: 0.7;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color, rgba(128, 128, 128, 0.25));
+}
+
+
+/* =====================================================
+   THEME SUPPORT
+===================================================== */
+
+:root{
+    --customer-modal-bg:#ffffff;
+    --customer-card-bg:#f8fafc;
+    --customer-text:#111827;
+    --customer-muted:#64748b;
+    --customer-border:#e5e7eb;
+}
+
+:global(html[data-theme="dark"]){
+    --customer-modal-bg:#0f172a;
+    --customer-card-bg:#1e293b;
+    --customer-text:#f8fafc;
+    --customer-muted:#94a3b8;
+    --customer-border:#334155;
+}
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.modal{
+    background:var(--customer-modal-bg);
+    color:var(--customer-text);
+    transition:all .25s ease;
+}
+
+.modalHeader{
+    border-bottom:1px solid var(--customer-border);
+}
+
+.modalActions{
+    border-top:1px solid var(--customer-border);
+}
+
+.closeBtn{
+    color:var(--customer-muted);
+}
+
+.closeBtn:hover{
+    background:var(--customer-card-bg);
+}
+
+/* =====================================================
+   PROFILE
+===================================================== */
+
+.name{
+    color:var(--customer-text);
+}
+
+.mobile{
+    color:var(--customer-muted);
+}
+
+.photo{
+    border:3px solid var(--customer-border);
+}
+
+/* =====================================================
+   DETAILS
+===================================================== */
+
+.detailItem{
+    background:var(--customer-card-bg);
+    border:1px solid var(--customer-border);
+    transition:.2s;
+}
+
+.detailItem:hover{
+    transform:translateY(-2px);
+}
+
+.detailLabel{
+    color:var(--customer-muted);
+}
+
+.detailValue{
+    color:var(--customer-text);
+}
+
+/* =====================================================
+   PAYMENT HISTORY
+===================================================== */
+
+.historySection{
+    border-top:1px solid var(--customer-border);
+}
+
+.historyTitle{
+    color:var(--customer-text);
+}
+
+.paymentItem{
+    border-bottom:1px dashed var(--customer-border);
+}
+
+.payAmt{
+    color:var(--customer-text);
+}
+
+.payDate{
+    color:var(--customer-muted);
+}
+
+.noPayments{
+    color:var(--customer-muted);
 }
 
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\PaymentHistory.jsx ==
@@ -1441,6 +3212,272 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   );
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\PaymentHistory.module.css ==
+
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 24px;
+}
+
+.formCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.formTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.searchCard {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+}
+
+.searchGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.totalRow {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.totalLabel {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.totalAmt {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.section {
+  margin-bottom: 36px;
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.paidTitle {
+  color: var(--color-success);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  min-width: 520px;
+}
+
+.table th,
+.table td {
+  padding: 13px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.table th {
+  background: linear-gradient(135deg, #2D3748, #1A2436);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.amt {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+}
+
+.paidRow {
+  background: var(--color-success-light) !important;
+  color: var(--color-success-text);
+  font-weight: 600;
+}
+
+.paidRow:hover {
+  background: #bbf7d0 !important;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Edit Modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modalHeader h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-fast);
+}
+
+.closeBtn:hover {
+  color: var(--color-text);
+}
+
+.customerInfo {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.customerInfo strong {
+  color: var(--color-text);
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .searchGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\Statistics.jsx ==
 
 import { useMemo } from 'react';
@@ -1519,6 +3556,150 @@ export default function Statistics({ customers }) {
       </div>
     </div>
   );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\Statistics.module.css ==
+
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 36px;
+}
+
+.card {
+  color: #fff;
+  border-radius: var(--radius-md);
+  padding: 26px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-md);
+}
+
+.cardValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.cardLabel {
+  font-size: 0.875rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.debtorsSection {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.subHeading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 16px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+}
+
+.table th,
+.table td {
+  padding: 13px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.table th {
+  background: linear-gradient(135deg, #2D3748, #1A2436);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+}
+
+.rank {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.875rem;
+  width: 40px;
+}
+
+.name {
+  font-weight: 600;
+}
+
+.debt {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .cardValue {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\ViewRecords.jsx ==
@@ -1972,6 +4153,306 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
   );
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\components\tabs\ViewRecords.module.css ==
+
+.wrapper {
+  padding: 30px;
+}
+
+.heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 20px;
+}
+
+.searchBar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 24px;
+  max-width: 480px;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.avatarImg { border-radius: 50%; object-fit: cover; cursor: pointer; border: 1px solid var(--color-border); }
+.avatarFallback { border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--color-primary); color: #fff; font-weight: 600; cursor: pointer; }
+.nameLink { background: none; border: none; padding: 0; font: inherit; color: var(--color-text); cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+.photoRow { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.photoActions { display: flex; flex-direction: column; gap: 4px; }
+.photoError { font-size: 0.8rem; color: var(--color-danger); }
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.paidTitle {
+  color: var(--color-success);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface);
+  min-width: 700px;
+}
+
+.table th,
+.table td {
+  padding: 13px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.table th {
+  background: linear-gradient(135deg, #2D3748, #1A2436);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--color-surface-2);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.row td {
+  vertical-align: top;
+}
+
+.balanceNeg {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.balancePos {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted);
+}
+
+.paidRow {
+  background: var(--color-success-light) !important;
+  color: var(--color-success-text);
+  font-weight: 600;
+}
+
+.paidRow:hover {
+  background: #bbf7d0 !important;
+}
+
+/* Actions in table cells */
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.historyToggle {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid #bfdbfe;
+  margin-top: 4px;
+  width: 100%;
+  justify-content: center;
+}
+
+.historyToggle:hover {
+  background: #dbeafe;
+}
+
+.historyPanel {
+  margin-top: 10px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  animation: expand 0.25s ease;
+}
+
+@keyframes expand {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.historyTitle {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.paymentList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.paymentItem {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 5px 10px;
+  font-size: 0.85rem;
+}
+
+.payAmt {
+  color: var(--color-success);
+  font-weight: 700;
+}
+
+.payDate {
+  color: var(--color-text-secondary);
+}
+
+.noPayments {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Edit Modal */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.editModal {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.modalHeader h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-fast);
+}
+
+.closeBtn:hover {
+  color: var(--color-text);
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 8px;
+}
+
+@media (max-width: 600px) {
+  .wrapper {
+    padding: 20px 16px;
+  }
+
+  .editGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .editModal {
+    padding: 20px 16px;
+  }
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\useAuth.js ==
 
 import { useState, useEffect } from 'react';
@@ -2172,6 +4653,52 @@ export function useCustomers(userId) {
   };
 }
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\useInstallPrompt.js ==
+
+import { useSyncExternalStore } from 'react';
+import { getSnapshot, subscribe, triggerInstall } from '../utils/installPromptStore';
+
+/**
+ * Reads from the shared installPromptStore (see src/utils/installPromptStore.js)
+ * instead of attaching its own listener â€” so state is correct no matter
+ * when/where a component using this hook mounts.
+ */
+export function useInstallPrompt() {
+  const { canInstall, isInstalled } = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  const isIOS = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+  const isIOSInstallable = isIOS && !isInstalled;
+
+  return {
+    canInstall,
+    isInstalled,
+    isIOSInstallable,
+    promptInstall: triggerInstall,
+  };
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\useOnlineStatus.js ==
+
+import { useEffect, useState } from 'react';
+
+export function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\hooks\usePayments.js ==
 
 import { useState, useEffect, useCallback } from 'react';
@@ -2324,6 +4851,78 @@ export const formatDate = (dateStr) => {
 
 export const today = () => new Date().toISOString().split('T')[0];
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\utils\installPromptStore.js ==
+
+/**
+ * Module-level singleton that captures the browser's install prompt
+ * the moment it fires, regardless of whether any React component is
+ * mounted yet to listen for it.
+ *
+ * Why this exists: `beforeinstallprompt` typically fires once, early
+ * during page load â€” often before the user has even logged in, i.e.
+ * before Header/InstallPopup exist in the tree. A hook that attaches
+ * its listener inside a component's useEffect only catches the event
+ * if it's already mounted at that exact moment. This file is imported
+ * once in main.jsx, so its listener attaches as early as possible and
+ * the captured event survives for the rest of the page's lifetime â€”
+ * every login after that can reuse the same captured prompt.
+ */
+
+let deferredPrompt = null;
+let isInstalled =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(display-mode: standalone)').matches;
+
+// IMPORTANT: useSyncExternalStore requires getSnapshot() to return the
+// SAME object reference across calls when nothing has changed â€” returning
+// a fresh `{ ... }` literal every call causes React to think the store is
+// changing on every render, which throws an infinite-loop error and blanks
+// the whole app. We cache the snapshot and only replace it when the
+// underlying values actually change.
+let snapshot = { canInstall: false, isInstalled };
+function updateSnapshot() {
+  snapshot = { canInstall: !!deferredPrompt, isInstalled };
+}
+
+const listeners = new Set();
+function emit() {
+  updateSnapshot();
+  listeners.forEach((cb) => cb());
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    emit();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    isInstalled = true;
+    deferredPrompt = null;
+    emit();
+  });
+}
+
+export function getSnapshot() {
+  return snapshot;
+}
+
+export function subscribe(callback) {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+/** Returns 'accepted' | 'dismissed' | 'unavailable' */
+export async function triggerInstall() {
+  if (!deferredPrompt) return 'unavailable';
+  deferredPrompt.prompt();
+  const choice = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  emit();
+  return choice.outcome;
+}
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\utils\recentlyPaid.js ==
 
 // Shared "recently paid" tracker.
@@ -2384,7 +4983,7 @@ export function unmarkRecentlyPaid(ids) {
 
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\App.jsx ==
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 import { useCustomers } from './hooks/useCustomers';
@@ -2393,6 +4992,8 @@ import { usePayments } from './hooks/usePayments';
 import AuthPage from './components/auth/AuthPage';
 import Header from './components/layout/Header';
 import NavTabs from './components/layout/NavTabs';
+import OfflineBanner from './components/shared/OfflineBanner';
+import InstallPopup from './components/shared/InstallPopup';
 import AddCustomer from './components/tabs/AddCustomer';
 import ViewRecords from './components/tabs/ViewRecords';
 import Statistics from './components/tabs/Statistics';
@@ -2419,6 +5020,22 @@ export default function App() {
   const { isDark, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('view');
 
+  // Controls the install popup â€” opened automatically ~1.2s after every
+  // fresh login, AND can be opened manually via the Header's "Install App"
+  // row. No longer gated behind a "only once per session" flag, since
+  // that was hiding it on repeat logins.
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const prevUserRef = useRef(undefined);
+
+  useEffect(() => {
+    const prevUser = prevUserRef.current;
+    prevUserRef.current = user;
+    if (!prevUser && user) {
+      const timer = setTimeout(() => setShowInstallModal(true), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
   // Still resolving auth state
   if (user === undefined) {
     return (
@@ -2430,17 +5047,35 @@ export default function App() {
   }
 
   if (!user) {
-    return <AuthPage />;
+    return (
+      <>
+        <OfflineBanner />
+        <AuthPage />
+      </>
+    );
   }
 
   const isLoading = custLoading || payLoading;
 
   return (
     <div className={styles.app}>
-      <Header user={user} onLogout={logout} isDark={isDark} onToggleTheme={toggleTheme} />
+      <OfflineBanner />
+      <Header
+        user={user}
+        onLogout={logout}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onOpenInstall={() => setShowInstallModal(true)}
+      />
+
+      {/* On desktop (>1340px) this renders in normal flow, right where your
+          original top nav sat. On mobile (<=1340px) NavTabs.module.css
+          switches it to position: fixed, bottom: 0 via media query â€” DOM
+          position stops mattering at that point, but keeping it here is
+          what makes the desktop layout correct. */}
       <NavTabs activeTab={activeTab} onChange={setActiveTab} />
 
-      <main className={styles.main}>
+      <main className={`${styles.main} ${styles.mainWithBottomNav}`}>
         {isLoading ? (
           <div className={styles.innerLoading}>
             <span className={styles.spinner} />
@@ -2491,8 +5126,95 @@ export default function App() {
           </>
         )}
       </main>
+
+      <InstallPopup open={showInstallModal} onClose={() => setShowInstallModal(false)} />
     </div>
   );
+}
+
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\App.module.css ==
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.main {
+  flex: 1;
+  background: var(--color-surface);
+  max-width: 1280px;
+  width: 100%;
+  margin: 24px auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.fullLoading,
+.innerLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.fullLoading {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.innerLoading {
+  padding: 80px 20px;
+}
+
+.spinner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1340px) {
+  .main {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100vh;
+  }
+}
+
+
+
+/* Based on the App.module.css you shared. One edit needed. */
+
+/* Add this new class, applied alongside your existing .main in App.jsx
+   (className={`${styles.main} ${styles.mainWithBottomNav}`}).
+   On desktop it does nothing (NavTabs sits in normal flow up top,
+   same as before). On mobile, where NavTabs.module.css switches the
+   nav to position: fixed, bottom: 0, this adds clearance so the last
+   item in the list isn't hidden behind it. */
+.mainWithBottomNav {
+  padding-bottom: 0;
+}
+
+/* Nest inside your existing `@media (max-width: 1340px) { .main { ... } }`
+   block (or add as its own block right after it, same breakpoint): */
+@media (max-width: 1340px) {
+  .mainWithBottomNav {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
 }
 
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\firebase.js ==
@@ -2515,12 +5237,340 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export default app;
 
+== FILE: C:\xampp\htdocs\Utangcp\credit-app\src\index.css ==
+
+:root {
+  --color-primary: #2D68C4;
+  --color-primary-dark: #1E4482;
+  --color-primary-light: #EBF2FF;
+  --color-primary-hover: #2558A8;
+
+  --color-success: #16A34A;
+  --color-success-light: #DCFCE7;
+  --color-success-text: #15803D;
+  --color-success-border: #A7F3C5;
+
+  --color-danger: #DC2626;
+  --color-danger-light: #FEE2E2;
+  --color-danger-text: #B91C1C;
+
+  --color-warning: #D97706;
+  --color-warning-light: #FEF3C7;
+  --color-warning-text: #92400E;
+  --color-warning-border: #FDE68A;
+
+  --color-bg: #F0F4FA;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F8FAFC;
+  --color-border: #E2E8F0;
+  --color-border-focus: #2D68C4;
+
+  --color-text: #1A2436;
+  --color-text-secondary: #4A5568;
+  --color-text-muted: #9AAAB8;
+
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
+
+  --transition: 0.2s ease;
+  --transition-fast: 0.15s ease;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* â”€â”€ Shared Form Controls â”€â”€ */
+.input {
+  padding: 10px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(45, 104, 196, 0.12);
+}
+
+.input:read-only {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+}
+
+/* â”€â”€ Shared Buttons â”€â”€ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast),
+    box-shadow var(--transition-fast), opacity var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  box-shadow: 0 4px 12px rgba(45, 104, 196, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #15803d;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  background: var(--color-warning-light);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-border);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  border: 1.5px solid var(--color-border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--color-border);
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-xs);
+}
+
+/* â”€â”€ Dark Theme â”€â”€ */
+[data-theme="dark"] {
+  --color-primary: #4facfe;
+  --color-primary-dark: #2D68C4;
+  --color-primary-light: #0F2847;
+  --color-primary-hover: #6fbeff;
+
+  --color-success: #34D399;
+  --color-success-light: #052E16;
+  --color-success-text: #34D399;
+  --color-success-border: #065F46;
+
+  --color-danger: #F87171;
+  --color-danger-light: #3B0A0A;
+  --color-danger-text: #FCA5A5;
+
+  --color-warning: #FBBF24;
+  --color-warning-light: #2D1B00;
+  --color-warning-text: #FCD34D;
+  --color-warning-border: #78350F;
+
+  --color-bg: #0D1526;
+  --color-surface: #162033;
+  --color-surface-2: #1A2640;
+  --color-border: #243350;
+  --color-border-focus: #4facfe;
+
+  --color-text: #E2EAF4;
+  --color-text-secondary: #8FA3BF;
+  --color-text-muted: #4D6280;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* â”€â”€ Scrollbar â”€â”€ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+
+/* ============================================================
+   Add this block to src/index.css (or wherever your global
+   styles live). It's what makes an installed PWA stop feeling
+   like "a website in a box" and start feeling like a real app.
+   ============================================================ */
+
+html,
+body {
+  /* Stop the rubber-band overscroll that reveals white space at
+     the top/bottom when a user drags past the content edge. */
+  overscroll-behavior-y: none;
+  /* Remove the grey flash Android shows when you tap a button/link. */
+  -webkit-tap-highlight-color: transparent;
+  /* Prevent iOS from auto-zooming when a text input is focused
+     (only kicks in if inputs are below 16px font-size, but this
+     is a safe belt-and-suspenders rule). */
+  touch-action: manipulation;
+}
+
+body {
+  /* Push content below the notch / status bar and above the
+     home-indicator on iOS when running in standalone mode. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* If your Header is meant to sit flush at the very top (common
+   app pattern), apply the safe-area padding there instead of on
+   body, and let body have 0. Example: */
+/*
+.header {
+  padding-top: calc(12px + env(safe-area-inset-top));
+}
+*/
+
+/* Disable text selection on interactive chrome (nav, buttons) so
+   long-presses don't trigger the iOS text-selection magnifier. */
+nav,
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Prevent the browser's default pull-to-refresh on Chrome/Android
+   for scrollable containers you control yourself. Apply this class
+   to your top-level scroll container if you build custom
+   pull-to-refresh later; otherwise the html/body rule above covers it. */
+
 == FILE: C:\xampp\htdocs\Utangcp\credit-app\src\main.jsx ==
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+
+// Import first, before anything else â€” this attaches the
+// beforeinstallprompt listener at the earliest possible moment,
+// so it's captured even before the user logs in / Header mounts.
+import './utils/installPromptStore';
+
 import './index.css';
 import App from './App.jsx';
+import { registerSW } from 'virtual:pwa-register';
+
+registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    if (confirm('A new version of Credit Management is available. Reload now?')) {
+      window.location.reload();
+    }
+  },
+  onOfflineReady() {
+    console.log('App ready to work offline.');
+  },
+});
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
