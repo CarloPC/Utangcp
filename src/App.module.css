@@ -58,3 +58,25 @@
     min-height: 100vh;
   }
 }
+
+
+
+/* Based on the App.module.css you shared. One edit needed. */
+
+/* Add this new class, applied alongside your existing .main in App.jsx
+   (className={`${styles.main} ${styles.mainWithBottomNav}`}).
+   On desktop it does nothing (NavTabs sits in normal flow up top,
+   same as before). On mobile, where NavTabs.module.css switches the
+   nav to position: fixed, bottom: 0, this adds clearance so the last
+   item in the list isn't hidden behind it. */
+.mainWithBottomNav {
+  padding-bottom: 0;
+}
+
+/* Nest inside your existing `@media (max-width: 1340px) { .main { ... } }`
+   block (or add as its own block right after it, same breakpoint): */
+@media (max-width: 1340px) {
+  .mainWithBottomNav {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
