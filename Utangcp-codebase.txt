@@ -5020,19 +5020,34 @@ export default function App() {
   const { isDark, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('view');
 
-  // Controls the install popup â€” opened automatically ~1.2s after every
-  // fresh login, AND can be opened manually via the Header's "Install App"
-  // row. No longer gated behind a "only once per session" flag, since
-  // that was hiding it on repeat logins.
+  // Controls the install popup â€” opened automatically ~1.2s after a
+  // genuinely fresh login, via the Header's "Install App" row.
+  //
+  // Because Firebase persists the session, a page REFRESH also makes
+  // `user` go from undefined -> the same logged-in object, which looks
+  // identical to a fresh login from this component's perspective. To
+  // tell them apart, we mark "already shown" in sessionStorage the
+  // first time it displays. sessionStorage survives refreshes (so it
+  // won't show again on reload) but is cleared on explicit logout (so
+  // the next real login shows it again). Closing the tab also clears
+  // sessionStorage, so a brand new tab session counts as fresh too.
   const [showInstallModal, setShowInstallModal] = useState(false);
   const prevUserRef = useRef(undefined);
 
   useEffect(() => {
     const prevUser = prevUserRef.current;
     prevUserRef.current = user;
+
     if (!prevUser && user) {
-      const timer = setTimeout(() => setShowInstallModal(true), 1200);
-      return () => clearTimeout(timer);
+      if (!sessionStorage.getItem('installPopupShown')) {
+        sessionStorage.setItem('installPopupShown', '1');
+        const timer = setTimeout(() => setShowInstallModal(true), 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+
+    if (!user) {
+      sessionStorage.removeItem('installPopupShown');
     }
   }, [user]);
 

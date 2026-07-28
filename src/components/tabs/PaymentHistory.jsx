@@ -1,11 +1,57 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Alert from '../shared/Alert';
 import ConfirmModal from '../shared/ConfirmModal';
 import { formatCurrency, formatDate, today } from '../../utils/format';
-import { markRecentlyPaid, unmarkRecentlyPaid } from '../../utils/recentlyPaid';
+import { loadRecentlyPaid, markRecentlyPaid, unmarkRecentlyPaid } from '../../utils/recentlyPaid';
 import styles from './PaymentHistory.module.css';
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Edit Payment Modal Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── Confetti burst (fires when a customer fully pays off their balance) ──
+function ConfettiBurst({ onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3200);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  const pieces = useMemo(() => {
+    const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#a855f7', '#ef4444', '#14b8a6'];
+    return Array.from({ length: 70 }, (_, i) => {
+      const fromLeft = i % 2 === 0;
+      return {
+        id: i,
+        left: fromLeft ? Math.random() * 12 : 88 + Math.random() * 12,
+        color: colors[i % colors.length],
+        delay: Math.random() * 0.7,
+        duration: 2.2 + Math.random() * 1.4,
+        rotate: Math.round(Math.random() * 360 + 360),
+        size: 6 + Math.random() * 6,
+        drift: (fromLeft ? 1 : -1) * (60 + Math.random() * 120),
+      };
+    });
+  }, []);
+
+  return (
+    <div className={styles.confettiLayer} aria-hidden="true">
+      {pieces.map((p) => (
+        <span
+          key={p.id}
+          className={styles.confettiPiece}
+          style={{
+            left: `${p.left}%`,
+            backgroundColor: p.color,
+            width: p.size,
+            height: p.size * 0.42,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            '--drift': `${p.drift}px`,
+            '--rot': `${p.rotate}deg`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Edit Payment Modal ──
 function EditPaymentModal({ payment, customers, onSave, onClose }) {
   const customer = customers.find((c) => c.id === payment.credit_id);
   const [amount, setAmount] = useState(String(payment.amount));
@@ -30,7 +76,7 @@ function EditPaymentModal({ payment, customers, onSave, onClose }) {
       <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog">
         <div className={styles.modalHeader}>
           <h3>Edit Payment</h3>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">Ã¢Å“â€¢</button>
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         {customer && (
@@ -65,7 +111,7 @@ function EditPaymentModal({ payment, customers, onSave, onClose }) {
   );
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ── Main Component ──
 export default function PaymentHistory({ customers, payments, onAdd, onUpdate, onDelete }) {
   const [form, setForm] = useState({ credit_id: '', amount: '', payment_date: today() });
   const [customerSearch, setCustomerSearch] = useState('');
@@ -76,6 +122,17 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
+
+  // Customers marked "paid this session" (today) — shared with Bulk Add.
+  const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
+
+  // Holds the pending form values while we wait for the user to confirm
+  // they really want to record a second payment for someone already
+  // marked as paid today.
+  const [pendingDuplicate, setPendingDuplicate] = useState(null);
+
+  // Confetti + payoff celebration state
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Outstanding customers (for the add form dropdown)
   const outstandingCustomers = useMemo(
@@ -91,6 +148,15 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
         (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || '')).toLowerCase().includes(q)
     );
   }, [outstandingCustomers, customerSearch]);
+
+  // Currently selected customer in the Add Payment form (if any)
+  const selectedCustomer = useMemo(
+    () => outstandingCustomers.find((c) => c.id === form.credit_id) || null,
+    [outstandingCustomers, form.credit_id]
+  );
+
+  // Is the selected customer already marked "paid this session" (today)?
+  const isDuplicateSelected = !!(selectedCustomer && recentlyPaid.has(selectedCustomer.id));
 
   // Build enriched payments (join customer info)
   const enriched = useMemo(() => {
@@ -135,18 +201,46 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     return total;
   }, [payments, customers, searchName, searchDate, filtered]);
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!form.credit_id) return;
+  // When searching by name in the history tables, let the user know if
+  // that customer already has a payment recorded today.
+  const searchNameMatchesPaidToday = useMemo(() => {
+    if (!searchName) return false;
+    const q = searchName.toLowerCase();
+    return customers.some(
+      (c) =>
+        recentlyPaid.has(c.id) &&
+        (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || '')).toLowerCase().includes(q)
+    );
+  }, [customers, recentlyPaid, searchName]);
+
+  // Actually perform the payment submission (shared by the normal path
+  // and the "add anyway" duplicate-confirmation path).
+  const submitPayment = async (creditId, amount, paymentDate) => {
     setAddLoading(true);
     try {
-      await onAdd(form.credit_id, form.amount, form.payment_date);
-      // Only tag as "paid this session" if the payment is for today â€”
+      const customer = customers.find((c) => c.id === creditId);
+      const amt = Number(amount);
+      const currentBalance = customer?.remaining_balance ?? 0;
+      const willFullyPayOff = currentBalance > 0 && amt >= currentBalance;
+
+      await onAdd(creditId, amount, paymentDate);
+
+      // Only tag as "paid this session" if the payment is for today —
       // Bulk Add's green label is specifically about today's payments.
-      if (form.payment_date === today()) {
-        markRecentlyPaid(form.credit_id);
+      if (paymentDate === today()) {
+        setRecentlyPaid(markRecentlyPaid(creditId));
       }
-      setAlert({ type: 'success', message: 'Payment recorded successfully!' });
+
+      if (willFullyPayOff) {
+        setShowConfetti(true);
+        setAlert({
+          type: 'success',
+          message: `🎉 ${customer.firstname} ${customer.lastname} just paid off their entire balance!`,
+        });
+      } else {
+        setAlert({ type: 'success', message: 'Payment recorded successfully!' });
+      }
+
       setForm({ credit_id: '', amount: '', payment_date: today() });
       setCustomerSearch('');
     } catch {
@@ -154,6 +248,28 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     } finally {
       setAddLoading(false);
     }
+  };
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!form.credit_id) return;
+
+    // Duplicate-payment guard: if this customer already has a payment
+    // recorded today, ask for confirmation before recording another one,
+    // so we don't accidentally create a duplicate entry for the day.
+    if (form.payment_date === today() && recentlyPaid.has(form.credit_id)) {
+      setPendingDuplicate({ ...form });
+      return;
+    }
+
+    await submitPayment(form.credit_id, form.amount, form.payment_date);
+  };
+
+  const confirmDuplicateAdd = async () => {
+    if (!pendingDuplicate) return;
+    const { credit_id, amount, payment_date } = pendingDuplicate;
+    setPendingDuplicate(null);
+    await submitPayment(credit_id, amount, payment_date);
   };
 
   const handleUpdatePayment = async (paymentId, creditId, newAmount, newDate, oldAmount) => {
@@ -182,7 +298,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
             p.payment_date === today()
         );
         if (!stillPaidToday) {
-          unmarkRecentlyPaid(deleteTarget.credit_id);
+          setRecentlyPaid(unmarkRecentlyPaid(deleteTarget.credit_id));
         }
       }
 
@@ -204,6 +320,8 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     <div className={styles.wrapper}>
       <h2 className={styles.heading}>Payment History</h2>
 
+      {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
+
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
       )}
@@ -223,18 +341,36 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                 style={{ marginBottom: 8 }}
               />
               <select
-                className="input"
+                className={`input ${isDuplicateSelected ? styles.selectPaidToday : ''}`}
                 value={form.credit_id}
                 onChange={(e) => setForm((p) => ({ ...p, credit_id: e.target.value }))}
                 required
               >
                 <option value="">-- Select --</option>
-                {filteredDropdown.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.firstname} {c.lastname}{c.product_name ? ` (${c.product_name})` : ''}
-                  </option>
-                ))}
+                {filteredDropdown.map((c) => {
+                  const paidToday = recentlyPaid.has(c.id);
+                  return (
+                    <option
+                      key={c.id}
+                      value={c.id}
+                      className={paidToday ? styles.optionPaidToday : undefined}
+                      style={paidToday ? { color: '#16a34a', backgroundColor: '#f0fdf4', fontWeight: 600 } : undefined}
+                    >
+                      {paidToday ? '✓ ' : ''}
+                      {c.firstname} {c.lastname}{c.product_name ? ` (${c.product_name})` : ''}
+                      {paidToday ? ' — Paid this session' : ''}
+                    </option>
+                  );
+                })}
               </select>
+
+              {isDuplicateSelected && (
+                <p className={styles.duplicateWarning}>
+                  ⚠️ {selectedCustomer.firstname} {selectedCustomer.lastname} already has a payment
+                  recorded today — marked <strong>Paid this session</strong>. You'll be asked to
+                  confirm before another one is added.
+                </p>
+              )}
             </div>
 
             <div className={styles.group}>
@@ -279,6 +415,11 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
             />
+            {searchNameMatchesPaidToday && (
+              <p className={styles.duplicateWarning} style={{ marginTop: 6 }}>
+                ✓ This customer is marked <strong>Paid this session</strong> for today.
+              </p>
+            )}
           </div>
           <div className={styles.group}>
             <label className="label">Search by Payment Date</label>
@@ -331,7 +472,12 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
               ) : (
                 outstandingPayments.map((p) => (
                   <tr key={p.id}>
-                    <td>{p.customer?.firstname} {p.customer?.lastname}</td>
+                    <td>
+                      {p.customer?.firstname} {p.customer?.lastname}
+                      {p.customer && recentlyPaid.has(p.customer.id) && (
+                        <span className={styles.paidTag}>✓ Paid this session</span>
+                      )}
+                    </td>
                     <td>{p.customer?.product_name}</td>
                     <td className={styles.amt}>{formatCurrency(p.amount)}</td>
                     <td>{formatDate(p.payment_date)}</td>
@@ -396,6 +542,19 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}
+        />
+      )}
+
+      {pendingDuplicate && (
+        <ConfirmModal
+          title="Already Paid This Session"
+          message={`${outstandingCustomers.find((c) => c.id === pendingDuplicate.credit_id)?.firstname || 'This customer'} already has a payment recorded today. Add another payment anyway?`}
+          onConfirm={confirmDuplicateAdd}
+          onCancel={() => setPendingDuplicate(null)}
+          loading={addLoading}
+          confirmLabel="Add Anyway"
+          loadingLabel="Adding…"
+          confirmClass="btn btn-warning"
         />
       )}
     </div>
