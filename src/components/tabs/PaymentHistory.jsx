@@ -126,11 +126,6 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   // Customers marked "paid this session" (today) — shared with Bulk Add.
   const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
 
-  // Holds the pending form values while we wait for the user to confirm
-  // they really want to record a second payment for someone already
-  // marked as paid today.
-  const [pendingDuplicate, setPendingDuplicate] = useState(null);
-
   // Confetti + payoff celebration state
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -148,15 +143,6 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
         (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || '')).toLowerCase().includes(q)
     );
   }, [outstandingCustomers, customerSearch]);
-
-  // Currently selected customer in the Add Payment form (if any)
-  const selectedCustomer = useMemo(
-    () => outstandingCustomers.find((c) => c.id === form.credit_id) || null,
-    [outstandingCustomers, form.credit_id]
-  );
-
-  // Is the selected customer already marked "paid this session" (today)?
-  const isDuplicateSelected = !!(selectedCustomer && recentlyPaid.has(selectedCustomer.id));
 
   // Build enriched payments (join customer info)
   const enriched = useMemo(() => {
@@ -254,22 +240,19 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     e.preventDefault();
     if (!form.credit_id) return;
 
-    // Duplicate-payment guard: if this customer already has a payment
-    // recorded today, ask for confirmation before recording another one,
-    // so we don't accidentally create a duplicate entry for the day.
+    // Duplicate-payment guard: customers already paid today are disabled
+    // in the dropdown so they can't be selected in the first place. This
+    // is just a safety net in case the selection slips through some other
+    // way (e.g. stale form state).
     if (form.payment_date === today() && recentlyPaid.has(form.credit_id)) {
-      setPendingDuplicate({ ...form });
+      setAlert({
+        type: 'error',
+        message: 'This customer is already marked "Paid this session" — pick a different customer or a different date.',
+      });
       return;
     }
 
     await submitPayment(form.credit_id, form.amount, form.payment_date);
-  };
-
-  const confirmDuplicateAdd = async () => {
-    if (!pendingDuplicate) return;
-    const { credit_id, amount, payment_date } = pendingDuplicate;
-    setPendingDuplicate(null);
-    await submitPayment(credit_id, amount, payment_date);
   };
 
   const handleUpdatePayment = async (paymentId, creditId, newAmount, newDate, oldAmount) => {
@@ -341,7 +324,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                 style={{ marginBottom: 8 }}
               />
               <select
-                className={`input ${isDuplicateSelected ? styles.selectPaidToday : ''}`}
+                className="input"
                 value={form.credit_id}
                 onChange={(e) => setForm((p) => ({ ...p, credit_id: e.target.value }))}
                 required
@@ -353,8 +336,13 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                     <option
                       key={c.id}
                       value={c.id}
+                      disabled={paidToday}
                       className={paidToday ? styles.optionPaidToday : undefined}
-                      style={paidToday ? { color: '#16a34a', backgroundColor: '#f0fdf4', fontWeight: 600 } : undefined}
+                      style={
+                        paidToday
+                          ? { color: '#15803d', backgroundColor: '#f0fdf4', fontStyle: 'italic' }
+                          : undefined
+                      }
                     >
                       {paidToday ? '✓ ' : ''}
                       {c.firstname} {c.lastname}{c.product_name ? ` (${c.product_name})` : ''}
@@ -364,11 +352,11 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                 })}
               </select>
 
-              {isDuplicateSelected && (
+              {filteredDropdown.some((c) => recentlyPaid.has(c.id)) && (
                 <p className={styles.duplicateWarning}>
-                  ⚠️ {selectedCustomer.firstname} {selectedCustomer.lastname} already has a payment
-                  recorded today — marked <strong>Paid this session</strong>. You'll be asked to
-                  confirm before another one is added.
+                  ✓ Customers already <strong>paid this session</strong> are greyed out and can't
+                  be selected here — this avoids duplicate entries for today. To add another
+                  payment for one of them anyway, pick a different date first.
                 </p>
               )}
             </div>
@@ -542,19 +530,6 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
           onConfirm={handleDeleteConfirm}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}
-        />
-      )}
-
-      {pendingDuplicate && (
-        <ConfirmModal
-          title="Already Paid This Session"
-          message={`${outstandingCustomers.find((c) => c.id === pendingDuplicate.credit_id)?.firstname || 'This customer'} already has a payment recorded today. Add another payment anyway?`}
-          onConfirm={confirmDuplicateAdd}
-          onCancel={() => setPendingDuplicate(null)}
-          loading={addLoading}
-          confirmLabel="Add Anyway"
-          loadingLabel="Adding…"
-          confirmClass="btn btn-warning"
         />
       )}
     </div>

@@ -248,12 +248,7 @@
   justify-content: flex-end;
 }
 
-/* ── "Paid this session" select highlight + warning ── */
-.selectPaidToday {
-  border-color: #22c55e !important;
-  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
-}
-
+/* ── "Paid this session" dropdown option (disabled, can't be selected) ── */
 .optionPaidToday {
   color: #16a34a;
   background-color: #f0fdf4;
@@ -264,9 +259,9 @@
   margin-top: 8px;
   font-size: 0.82rem;
   font-weight: 500;
-  color: #b45309;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
   border-radius: var(--radius-sm);
   padding: 8px 10px;
   line-height: 1.4;
