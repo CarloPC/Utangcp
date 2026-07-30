@@ -48,6 +48,127 @@
   min-width: 200px;
 }
 
+/* ── Amount groups ── */
+.groupsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.groupChip {
+  --group-color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.groupChip:hover {
+  border-color: var(--group-color);
+}
+
+.groupChipActive {
+  border-color: var(--group-color);
+  background: color-mix(in srgb, var(--group-color) 12%, var(--color-surface-2));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--group-color) 18%, transparent);
+}
+
+.groupChipCurrency {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--group-color);
+}
+
+.groupChipInput {
+  width: 70px;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: inherit;
+  -moz-appearance: textfield;
+}
+
+.groupChipInput::-webkit-outer-spin-button,
+.groupChipInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.groupChipCount {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.groupChipRemove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.groupChipRemove:hover {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.addGroupBtn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.addGroupBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.groupHint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin: 4px 0 16px;
+}
+
+/* ── Per-customer group tag (assigned to a different amount than active) ── */
+.groupTag {
+  --group-color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--group-color);
+  background: color-mix(in srgb, var(--group-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--group-color) 35%, transparent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
 /* ── Summary box ── */
 .summaryBox {
   display: flex;
@@ -353,6 +474,18 @@
 
   .group {
     min-width: unset;
+  }
+
+  .groupsRow {
+    gap: 8px;
+  }
+
+  .groupChip {
+    flex: 1 1 auto;
+  }
+
+  .groupChipInput {
+    width: 56px;
   }
 
   .toolbar {
