@@ -126,6 +126,24 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   // Customers marked "paid this session" (today) — shared with Bulk Add.
   const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
 
+  // Self-healing check: the "paid this session" flag is set/cleared by
+  // hand (mark on add, unmark on delete), which can drift out of sync if
+  // a today-dated payment is ever removed some other way. Whenever the
+  // live payments list changes, drop any flagged customer who no longer
+  // actually has a payment dated today — this is what guarantees the
+  // dropdown un-greys itself after a delete.
+  useEffect(() => {
+    const todayStr = today();
+    const idsWithPaymentToday = new Set(
+      payments.filter((p) => p.payment_date === todayStr).map((p) => p.credit_id)
+    );
+    setRecentlyPaid((prev) => {
+      const stale = [...prev].filter((id) => !idsWithPaymentToday.has(id));
+      if (stale.length === 0) return prev;
+      return unmarkRecentlyPaid(stale);
+    });
+  }, [payments]);
+
   // Confetti + payoff celebration state
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -143,6 +161,10 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
         (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || '')).toLowerCase().includes(q)
     );
   }, [outstandingCustomers, customerSearch]);
+
+  // Whether the Add Payment form's date is currently set to today — the
+  // "already paid" dropdown restriction only applies in that case.
+  const isAddingForToday = form.payment_date === today();
 
   // Build enriched payments (join customer info)
   const enriched = useMemo(() => {
@@ -241,10 +263,10 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     if (!form.credit_id) return;
 
     // Duplicate-payment guard: customers already paid today are disabled
-    // in the dropdown so they can't be selected in the first place. This
-    // is just a safety net in case the selection slips through some other
-    // way (e.g. stale form state).
-    if (form.payment_date === today() && recentlyPaid.has(form.credit_id)) {
+    // in the dropdown so they can't be selected in the first place (only
+    // when the date is today). This is just a safety net in case the
+    // selection slips through some other way (e.g. stale form state).
+    if (isAddingForToday && recentlyPaid.has(form.credit_id)) {
       setAlert({
         type: 'error',
         message: 'This customer is already marked "Paid this session" — pick a different customer or a different date.',
@@ -331,28 +353,32 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
               >
                 <option value="">-- Select --</option>
                 {filteredDropdown.map((c) => {
-                  const paidToday = recentlyPaid.has(c.id);
+                  // Only block selection when adding a payment for TODAY
+                  // and this customer already has one. Picking a past date
+                  // (e.g. recording yesterday's payment) is always allowed,
+                  // even if they're already marked paid for today.
+                  const blockedForThisDate = isAddingForToday && recentlyPaid.has(c.id);
                   return (
                     <option
                       key={c.id}
                       value={c.id}
-                      disabled={paidToday}
-                      className={paidToday ? styles.optionPaidToday : undefined}
+                      disabled={blockedForThisDate}
+                      className={blockedForThisDate ? styles.optionPaidToday : undefined}
                       style={
-                        paidToday
+                        blockedForThisDate
                           ? { color: '#15803d', backgroundColor: '#f0fdf4', fontStyle: 'italic' }
                           : undefined
                       }
                     >
-                      {paidToday ? '✓ ' : ''}
+                      {blockedForThisDate ? '✓ ' : ''}
                       {c.firstname} {c.lastname}{c.product_name ? ` (${c.product_name})` : ''}
-                      {paidToday ? ' — Paid this session' : ''}
+                      {blockedForThisDate ? ' — Paid this session' : ''}
                     </option>
                   );
                 })}
               </select>
 
-              {filteredDropdown.some((c) => recentlyPaid.has(c.id)) && (
+              {isAddingForToday && filteredDropdown.some((c) => recentlyPaid.has(c.id)) && (
                 <p className={styles.duplicateWarning}>
                   ✓ Customers already <strong>paid this session</strong> are greyed out and can't
                   be selected here — this avoids duplicate entries for today. To add another
