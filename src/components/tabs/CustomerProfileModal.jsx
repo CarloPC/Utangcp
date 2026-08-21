@@ -63,14 +63,20 @@ export default function CustomerProfileModal({ customer, payments, onClose, onEd
             {payments.length === 0 ? (
               <p className={styles.noPayments}>No payment history.</p>
             ) : (
-              <ul className={styles.paymentList}>
-                {payments.map((p) => (
-                  <li key={p.id} className={styles.paymentItem}>
-                    <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
-                    <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <div className={styles.daysPaidRow}>
+                  <span>Total Days Paid:</span>
+                  <span>{new Set(payments.map((p) => p.payment_date)).size}</span>
+                </div>
+                <ul className={styles.paymentList}>
+                  {payments.map((p) => (
+                    <li key={p.id} className={styles.paymentItem}>
+                      <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
+                      <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
         </div>

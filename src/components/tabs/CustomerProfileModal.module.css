@@ -144,6 +144,19 @@
   margin: 0;
 }
 
+.daysPaidRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-primary, #2563eb);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
 .paymentList {
   list-style: none;
   margin: 0;

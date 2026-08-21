@@ -57,8 +57,19 @@
   border-top: 1px solid var(--color-border);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 24px;
   flex-wrap: wrap;
+}
+
+.totalRow > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.daysPaidLine {
+  padding-left: 24px;
+  border-left: 1px solid var(--color-border);
 }
 
 .totalLabel {
@@ -280,36 +291,6 @@
   border-radius: 999px;
   white-space: nowrap;
   vertical-align: middle;
-}
-
-/* ── Confetti celebration (fires when a balance is fully paid off) ── */
-.confettiLayer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 9999;
-}
-
-.confettiPiece {
-  position: absolute;
-  top: -20px;
-  border-radius: 2px;
-  opacity: 0;
-  animation-name: confettiFall;
-  animation-timing-function: ease-in;
-  animation-fill-mode: forwards;
-}
-
-@keyframes confettiFall {
-  0% {
-    transform: translate(0, 0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--drift), 112vh) rotate(var(--rot));
-    opacity: 0.9;
-  }
 }
 
 @media (max-width: 768px) {

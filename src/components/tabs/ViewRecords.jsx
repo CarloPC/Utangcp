@@ -185,20 +185,27 @@ function PaymentPanel({ payments }) {
   if (!payments.length) {
     return <p className={styles.noPayments}>No payment history.</p>;
   }
+  const totalDaysPaid = new Set(payments.map((p) => p.payment_date)).size;
   return (
-    <ul className={styles.paymentList}>
-      {payments.map((p) => (
-        <li key={p.id} className={styles.paymentItem}>
-          <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
-          <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <div className={styles.daysPaidRow}>
+        <span>Total Days Paid:</span>
+        <span className={styles.daysPaidCount}>{totalDaysPaid}</span>
+      </div>
+      <ul className={styles.paymentList}>
+        {payments.map((p) => (
+          <li key={p.id} className={styles.paymentItem}>
+            <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
+            <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
 // ── Customer Row ────────────────────────────────────────────────────────
-function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile }) {
+function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile, rowClassName, balanceClassName }) {
   const [showHistory, setShowHistory] = useState(false);
 
   const customerPayments = useMemo(
@@ -208,7 +215,7 @@ function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile }) {
 
   return (
     <>
-      <tr className={styles.row}>
+      <tr className={`${styles.row}${rowClassName ? ` ${rowClassName}` : ''}`}>
         <td>
           <Avatar customer={customer} onClick={() => onViewProfile(customer)} />
         </td>
@@ -227,7 +234,7 @@ function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile }) {
         </td>
         <td>{formatCurrency(customer.price)}</td>
         <td>{formatCurrency(customer.paid)}</td>
-        <td className={styles.balanceNeg}>{formatCurrency(customer.remaining_balance)}</td>
+        <td className={balanceClassName || styles.balanceNeg}>{formatCurrency(customer.remaining_balance)}</td>
         <td>{formatDate(customer.date)}</td>
         <td>{customer.product_name}</td>
         <td>
@@ -275,10 +282,18 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
     );
   }, [customers, search]);
 
-  const fullyPaid = useMemo(
-    () => customers.filter((c) => c.remaining_balance <= 0),
-    [customers]
-  );
+  const fullyPaid = useMemo(() => {
+    const q = search.toLowerCase();
+    return customers.filter(
+      (c) =>
+        c.remaining_balance <= 0 &&
+        (!q ||
+          c.firstname?.toLowerCase().includes(q) ||
+          c.lastname?.toLowerCase().includes(q) ||
+          c.mobile_number?.toLowerCase().includes(q) ||
+          c.product_name?.toLowerCase().includes(q))
+    );
+  }, [customers, search]);
 
   const profilePayments = useMemo(
     () => (profileTarget ? payments.filter((p) => p.credit_id === profileTarget.id) : []),
@@ -369,7 +384,7 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
       </div>
 
       {/* Fully Paid Table */}
-      {fullyPaid.length > 0 && (
+      {customers.some((c) => c.remaining_balance <= 0) && (
         <div className={styles.section}>
           <h3 className={`${styles.sectionTitle} ${styles.paidTitle}`}>Fully Paid Customers</h3>
           <div className={styles.tableWrap}>
@@ -384,31 +399,26 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
                   <th>Remaining</th>
                   <th>Date</th>
                   <th>Product</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {fullyPaid.map((c) => (
-                  <tr key={c.id} className={styles.paidRow}>
-                    <td>
-                      <Avatar customer={c} onClick={() => setProfileTarget(c)} />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className={styles.nameLink}
-                        onClick={() => setProfileTarget(c)}
-                      >
-                        {c.firstname} {c.lastname}
-                      </button>
-                    </td>
-                    <td>{c.mobile_number || <span className={styles.muted}>Not provided</span>}</td>
-                    <td>{formatCurrency(c.price)}</td>
-                    <td>{formatCurrency(c.paid)}</td>
-                    <td className={styles.balancePos}>{formatCurrency(c.remaining_balance)}</td>
-                    <td>{formatDate(c.date)}</td>
-                    <td>{c.product_name}</td>
-                  </tr>
-                ))}
+                {fullyPaid.length === 0 ? (
+                  <tr><td colSpan={9} className={styles.empty}>No records found</td></tr>
+                ) : (
+                fullyPaid.map((c) => (
+                  <CustomerRow
+                    key={c.id}
+                    customer={c}
+                    payments={payments}
+                    onEdit={setEditTarget}
+                    onDelete={setDeleteTarget}
+                    onViewProfile={setProfileTarget}
+                    rowClassName={styles.paidRow}
+                    balanceClassName={styles.balancePos}
+                  />
+                ))
+                )}
               </tbody>
             </table>
           </div>

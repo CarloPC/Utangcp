@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Alert from '../shared/Alert';
 import { today } from '../../utils/format';
+import { markRecentlyPaid } from '../../utils/recentlyPaid';
 import styles from './AddCustomer.module.css';
 
 const EMPTY = {
@@ -15,7 +16,7 @@ const EMPTY = {
 
 const MAX_PHOTO_MB = 5;
 
-export default function AddCustomer({ onAdd, onAddPayment, onUploadPhoto }) {
+export default function AddCustomer({ onAdd, onLogInitialPayment, onUploadPhoto }) {
   const [form, setForm] = useState(EMPTY);
   const [alert, setAlert] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -106,7 +107,12 @@ export default function AddCustomer({ onAdd, onAddPayment, onUploadPhoto }) {
       });
 
       if (Number(form.paid) > 0 && docRef?.id) {
-        await onAddPayment(docRef.id, form.paid, form.date);
+        await onLogInitialPayment(docRef.id, form.paid, form.date);
+        // If the initial payment is dated today, mark the customer as
+        // "paid this session" so the Payment History dropdown greys them out.
+        if (form.date === today()) {
+          markRecentlyPaid(docRef.id);
+        }
       }
 
       setAlert({ type: 'success', message: 'New customer record added successfully!' });

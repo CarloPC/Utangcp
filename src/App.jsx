@@ -28,7 +28,7 @@ export default function App() {
     uploadCustomerPhoto,
     deleteCustomerPhoto,
   } = useCustomers(user?.uid);
-  const { payments, loading: payLoading, addPayment, updatePayment, deletePayment } =
+  const { payments, loading: payLoading, addPayment, updatePayment, deletePayment, logInitialPayment } =
     usePayments(user?.uid);
 
   // Default tab is 'view' (matching daily.php behavior)
@@ -116,7 +116,7 @@ export default function App() {
             {activeTab === 'add' && (
               <AddCustomer
                 onAdd={addCustomer}
-                onAddPayment={addPayment}
+                onLogInitialPayment={logInitialPayment}
                 onUploadPhoto={uploadCustomerPhoto}
               />
             )}

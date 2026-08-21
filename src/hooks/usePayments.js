@@ -105,5 +105,22 @@ export function usePayments(userId) {
     [userId]
   );
 
-  return { payments, loading, addPayment, deletePayment, updatePayment };
+  // Records the initial payment made at customer creation time.
+  // Does NOT update credit totals — addCustomer already saved the correct
+  // paid / remaining_balance values, so calling addPayment would double-count.
+  const logInitialPayment = useCallback(
+    async (creditId, amount, paymentDate) => {
+      const amt = Number(amount);
+      if (!amt) return;
+      await addDoc(collection(db, 'users', userId, 'payment_history'), {
+        credit_id: creditId,
+        amount: amt,
+        payment_date: paymentDate,
+        createdAt: serverTimestamp(),
+      });
+    },
+    [userId]
+  );
+
+  return { payments, loading, addPayment, deletePayment, updatePayment, logInitialPayment };
 }

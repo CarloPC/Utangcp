@@ -162,6 +162,23 @@
   letter-spacing: 0.04em;
 }
 
+.daysPaidRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-xs);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.daysPaidCount {
+  font-size: 0.95rem;
+}
+
 .paymentList {
   list-style: none;
   display: flex;

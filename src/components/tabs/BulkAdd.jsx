@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import Alert from '../shared/Alert';
+import ConfettiBurst from '../shared/ConfettiBurst';
 import { formatCurrency } from '../../utils/format';
 import { loadRecentlyPaid, markRecentlyPaid } from '../../utils/recentlyPaid';
 import styles from './BulkAdd.module.css';
@@ -21,6 +22,7 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
   const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const activeGroup = groups.find((g) => g.id === activeGroupId) || groups[0];
 
@@ -131,11 +133,21 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
     setLoading(true);
     try {
       let allIds = [];
+      let anyPayoff = false;
       // Submit one bulk payment per amount group, sequentially.
       for (const g of activeGroups) {
         const ids = idsForGroup(g.id);
+        const amt = Number(g.amount);
+        // Check, before submitting, whether this amount fully settles any
+        // of the customers assigned to this group — used to decide
+        // whether to fire the confetti celebration below.
+        ids.forEach((id) => {
+          const customer = customers.find((c) => c.id === id);
+          const currentBalance = customer?.remaining_balance ?? 0;
+          if (currentBalance > 0 && amt >= currentBalance) anyPayoff = true;
+        });
         // eslint-disable-next-line no-await-in-loop
-        await onBulkAdd(ids, Number(g.amount));
+        await onBulkAdd(ids, amt);
         allIds = allIds.concat(ids);
       }
       // Mark submitted customers as recently paid — persisted for the rest of today
@@ -147,8 +159,11 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
         .join(', ');
       setAlert({
         type: 'success',
-        message: `Payment added to ${allIds.length} customer${allIds.length > 1 ? 's' : ''} successfully! (${summary})`,
+        message: anyPayoff
+          ? `🎉 Payment added to ${allIds.length} customer${allIds.length > 1 ? 's' : ''} — at least one is now fully paid off! (${summary})`
+          : `Payment added to ${allIds.length} customer${allIds.length > 1 ? 's' : ''} successfully! (${summary})`,
       });
+      if (anyPayoff) setShowConfetti(true);
       setAssignments({});
     } catch {
       setAlert({ type: 'error', message: 'Failed to add payments. Please try again.' });
@@ -160,6 +175,8 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
   return (
     <div className={styles.wrapper}>
       <h2 className={styles.heading}>Bulk Add Payment</h2>
+
+      {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
 
       {alert && (
         <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />

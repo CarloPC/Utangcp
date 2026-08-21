@@ -1,55 +1,10 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Alert from '../shared/Alert';
 import ConfirmModal from '../shared/ConfirmModal';
+import ConfettiBurst from '../shared/ConfettiBurst';
 import { formatCurrency, formatDate, today } from '../../utils/format';
 import { loadRecentlyPaid, markRecentlyPaid, unmarkRecentlyPaid } from '../../utils/recentlyPaid';
 import styles from './PaymentHistory.module.css';
-
-// ── Confetti burst (fires when a customer fully pays off their balance) ──
-function ConfettiBurst({ onDone }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 3200);
-    return () => clearTimeout(t);
-  }, [onDone]);
-
-  const pieces = useMemo(() => {
-    const colors = ['#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#a855f7', '#ef4444', '#14b8a6'];
-    return Array.from({ length: 70 }, (_, i) => {
-      const fromLeft = i % 2 === 0;
-      return {
-        id: i,
-        left: fromLeft ? Math.random() * 12 : 88 + Math.random() * 12,
-        color: colors[i % colors.length],
-        delay: Math.random() * 0.7,
-        duration: 2.2 + Math.random() * 1.4,
-        rotate: Math.round(Math.random() * 360 + 360),
-        size: 6 + Math.random() * 6,
-        drift: (fromLeft ? 1 : -1) * (60 + Math.random() * 120),
-      };
-    });
-  }, []);
-
-  return (
-    <div className={styles.confettiLayer} aria-hidden="true">
-      {pieces.map((p) => (
-        <span
-          key={p.id}
-          className={styles.confettiPiece}
-          style={{
-            left: `${p.left}%`,
-            backgroundColor: p.color,
-            width: p.size,
-            height: p.size * 0.42,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-            '--drift': `${p.drift}px`,
-            '--rot': `${p.rotate}deg`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 // ── Edit Payment Modal ──
 function EditPaymentModal({ payment, customers, onSave, onClose }) {
@@ -191,6 +146,32 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   const outstandingPayments = filtered.filter((p) => p.customer?.remaining_balance > 0);
   const paidPayments = filtered.filter((p) => p.customer?.remaining_balance <= 0);
 
+  // ── Celebrate settled customers when browsing by date ──
+  // Whenever the "Search by Payment Date" field is set (or changed) to a
+  // date that has at least one fully-paid/settled customer, fire the
+  // confetti burst — this makes it easy to spot at a glance which days
+  // had a payoff. Guarded by a ref so it only fires on an actual date
+  // change (not on every unrelated re-render / data refresh while the
+  // same date stays selected).
+  const lastCelebratedDateRef = useRef(null);
+  useEffect(() => {
+    if (!searchDate) {
+      lastCelebratedDateRef.current = null;
+      return;
+    }
+    if (searchDate === lastCelebratedDateRef.current) return;
+    lastCelebratedDateRef.current = searchDate;
+
+    const hasSettledOnDate = payments.some((p) => {
+      if (p.payment_date !== searchDate) return false;
+      const c = customers.find((cust) => cust.id === p.credit_id);
+      return c && c.remaining_balance <= 0;
+    });
+    if (hasSettledOnDate) {
+      setShowConfetti(true);
+    }
+  }, [searchDate, payments, customers]);
+
   // Search totals (from daily.php feature)
   const searchTotal = useMemo(() => {
     if (!searchDate && !searchName) return null;
@@ -206,7 +187,8 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
           })
         : filtered;
     const total = subset.reduce((s, p) => s + (p.amount || 0), 0);
-    return total;
+    const daysPaid = new Set(subset.map((p) => p.payment_date)).size;
+    return { total, daysPaid };
   }, [payments, customers, searchName, searchDate, filtered]);
 
   // When searching by name in the history tables, let the user know if
@@ -456,12 +438,18 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
         {/* Total Summary (daily.php feature) */}
         {searchTotal !== null && (
           <div className={styles.totalRow}>
-            <span className={styles.totalLabel}>
-              Total Payments
-              {searchDate ? ` for ${formatDate(searchDate)}` : ''}
-              {searchName ? ` for "${searchName}"` : ''}:
-            </span>
-            <span className={styles.totalAmt}>{formatCurrency(searchTotal)}</span>
+            <div>
+              <span className={styles.totalLabel}>
+                Total Payments
+                {searchDate ? ` for ${formatDate(searchDate)}` : ''}
+                {searchName ? ` for "${searchName}"` : ''}:
+              </span>
+              <span className={styles.totalAmt}>{formatCurrency(searchTotal.total)}</span>
+            </div>
+            <div className={styles.daysPaidLine}>
+              <span className={styles.totalLabel}>Total Days Paid:</span>
+              <span className={styles.totalAmt}>{searchTotal.daysPaid}</span>
+            </div>
           </div>
         )}
       </div>
