@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import Alert from '../shared/Alert';
 import { today } from '../../utils/format';
-import { markRecentlyPaid } from '../../utils/recentlyPaid';
 import styles from './AddCustomer.module.css';
 
 const EMPTY = {
@@ -107,12 +106,10 @@ export default function AddCustomer({ onAdd, onLogInitialPayment, onUploadPhoto 
       });
 
       if (Number(form.paid) > 0 && docRef?.id) {
+        // The Payment History / Bulk Add "already paid today" checks are
+        // derived live from the payment_history collection, so once this
+        // write lands it's picked up automatically — no manual flag needed.
         await onLogInitialPayment(docRef.id, form.paid, form.date);
-        // If the initial payment is dated today, mark the customer as
-        // "paid this session" so the Payment History dropdown greys them out.
-        if (form.date === today()) {
-          markRecentlyPaid(docRef.id);
-        }
       }
 
       setAlert({ type: 'success', message: 'New customer record added successfully!' });

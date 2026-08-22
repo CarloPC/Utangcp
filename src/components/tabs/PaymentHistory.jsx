@@ -3,7 +3,6 @@ import Alert from '../shared/Alert';
 import ConfirmModal from '../shared/ConfirmModal';
 import ConfettiBurst from '../shared/ConfettiBurst';
 import { formatCurrency, formatDate, today } from '../../utils/format';
-import { loadRecentlyPaid, markRecentlyPaid, unmarkRecentlyPaid } from '../../utils/recentlyPaid';
 import styles from './PaymentHistory.module.css';
 
 // ── Edit Payment Modal ──
@@ -78,25 +77,17 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   const [deleting, setDeleting] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
 
-  // Customers marked "paid this session" (today) — shared with Bulk Add.
-  const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
-
-  // Self-healing check: the "paid this session" flag is set/cleared by
-  // hand (mark on add, unmark on delete), which can drift out of sync if
-  // a today-dated payment is ever removed some other way. Whenever the
-  // live payments list changes, drop any flagged customer who no longer
-  // actually has a payment dated today — this is what guarantees the
-  // dropdown un-greys itself after a delete.
-  useEffect(() => {
+  // Customers who already have a payment dated today — derived directly
+  // from the live (realtime) payments list rather than a hand-maintained
+  // flag. This is what makes the "already paid today" block always
+  // accurate: adding, editing (e.g. changing a payment's date to today),
+  // or deleting a payment all flow straight through `payments` and
+  // recompute this instantly, with nothing to fall out of sync.
+  const paidTodayIds = useMemo(() => {
     const todayStr = today();
-    const idsWithPaymentToday = new Set(
+    return new Set(
       payments.filter((p) => p.payment_date === todayStr).map((p) => p.credit_id)
     );
-    setRecentlyPaid((prev) => {
-      const stale = [...prev].filter((id) => !idsWithPaymentToday.has(id));
-      if (stale.length === 0) return prev;
-      return unmarkRecentlyPaid(stale);
-    });
   }, [payments]);
 
   // Confetti + payoff celebration state
@@ -198,10 +189,10 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     const q = searchName.toLowerCase();
     return customers.some(
       (c) =>
-        recentlyPaid.has(c.id) &&
+        paidTodayIds.has(c.id) &&
         (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || '')).toLowerCase().includes(q)
     );
-  }, [customers, recentlyPaid, searchName]);
+  }, [customers, paidTodayIds, searchName]);
 
   // Actually perform the payment submission (shared by the normal path
   // and the "add anyway" duplicate-confirmation path).
@@ -214,12 +205,6 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
       const willFullyPayOff = currentBalance > 0 && amt >= currentBalance;
 
       await onAdd(creditId, amount, paymentDate);
-
-      // Only tag as "paid this session" if the payment is for today —
-      // Bulk Add's green label is specifically about today's payments.
-      if (paymentDate === today()) {
-        setRecentlyPaid(markRecentlyPaid(creditId));
-      }
 
       if (willFullyPayOff) {
         setShowConfetti(true);
@@ -248,7 +233,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     // in the dropdown so they can't be selected in the first place (only
     // when the date is today). This is just a safety net in case the
     // selection slips through some other way (e.g. stale form state).
-    if (isAddingForToday && recentlyPaid.has(form.credit_id)) {
+    if (isAddingForToday && paidTodayIds.has(form.credit_id)) {
       setAlert({
         type: 'error',
         message: 'This customer is already marked "Paid this session" — pick a different customer or a different date.',
@@ -273,22 +258,6 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
     setDeleting(true);
     try {
       await onDelete(deleteTarget.id, deleteTarget.credit_id, deleteTarget.amount);
-
-      // If the deleted payment was dated today, clear the customer's
-      // "paid this session" flag — but only if they have no other
-      // payment left that's also dated today.
-      if (deleteTarget.payment_date === today()) {
-        const stillPaidToday = payments.some(
-          (p) =>
-            p.credit_id === deleteTarget.credit_id &&
-            p.id !== deleteTarget.id &&
-            p.payment_date === today()
-        );
-        if (!stillPaidToday) {
-          setRecentlyPaid(unmarkRecentlyPaid(deleteTarget.credit_id));
-        }
-      }
-
       setAlert({ type: 'success', message: 'Payment deleted successfully!' });
     } catch {
       setAlert({ type: 'error', message: 'Failed to delete payment.' });
@@ -339,7 +308,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                   // and this customer already has one. Picking a past date
                   // (e.g. recording yesterday's payment) is always allowed,
                   // even if they're already marked paid for today.
-                  const blockedForThisDate = isAddingForToday && recentlyPaid.has(c.id);
+                  const blockedForThisDate = isAddingForToday && paidTodayIds.has(c.id);
                   return (
                     <option
                       key={c.id}
@@ -360,7 +329,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                 })}
               </select>
 
-              {isAddingForToday && filteredDropdown.some((c) => recentlyPaid.has(c.id)) && (
+              {isAddingForToday && filteredDropdown.some((c) => paidTodayIds.has(c.id)) && (
                 <p className={styles.duplicateWarning}>
                   ✓ Customers already <strong>paid this session</strong> are greyed out and can't
                   be selected here — this avoids duplicate entries for today. To add another
@@ -476,7 +445,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
                   <tr key={p.id}>
                     <td>
                       {p.customer?.firstname} {p.customer?.lastname}
-                      {p.customer && recentlyPaid.has(p.customer.id) && (
+                      {p.customer && paidTodayIds.has(p.customer.id) && (
                         <span className={styles.paidTag}>✓ Paid this session</span>
                       )}
                     </td>

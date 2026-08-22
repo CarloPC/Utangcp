@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import Alert from '../shared/Alert';
 import ConfettiBurst from '../shared/ConfettiBurst';
-import { formatCurrency } from '../../utils/format';
-import { loadRecentlyPaid, markRecentlyPaid } from '../../utils/recentlyPaid';
+import { formatCurrency, today } from '../../utils/format';
 import styles from './BulkAdd.module.css';
 
 // Cycle of colors used to visually tell amount groups apart.
@@ -11,7 +10,7 @@ const GROUP_COLORS = ['#2d68c4', '#f59e0b', '#16a34a', '#dc2626', '#7c3aed', '#0
 let groupIdCounter = 1;
 const makeGroupId = () => `g-${groupIdCounter++}-${Date.now().toString(36)}`;
 
-export default function BulkAdd({ customers = [], onBulkAdd }) {
+export default function BulkAdd({ customers = [], payments = [], onBulkAdd }) {
   // Each group is its own custom amount "bucket": { id, amount }.
   const [groups, setGroups] = useState(() => [{ id: makeGroupId(), amount: '100' }]);
   // Which group new selections get assigned to when you tap a customer.
@@ -21,8 +20,17 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
-  const [recentlyPaid, setRecentlyPaid] = useState(() => loadRecentlyPaid());
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // Customers who already have a payment dated today — derived directly
+  // from the live (realtime) payments list, so it's always accurate even
+  // if a payment was added/edited/deleted from the Payment History tab.
+  const paidTodayIds = useMemo(() => {
+    const todayStr = today();
+    return new Set(
+      payments.filter((p) => p.payment_date === todayStr).map((p) => p.credit_id)
+    );
+  }, [payments]);
 
   const activeGroup = groups.find((g) => g.id === activeGroupId) || groups[0];
 
@@ -150,9 +158,6 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
         await onBulkAdd(ids, amt);
         allIds = allIds.concat(ids);
       }
-      // Mark submitted customers as recently paid — persisted for the rest of today
-      // and shared with the Payment History tab.
-      setRecentlyPaid(markRecentlyPaid(allIds));
 
       const summary = activeGroups
         .map((g) => `${formatCurrency(Number(g.amount))} × ${idsForGroup(g.id).length}`)
@@ -301,7 +306,7 @@ export default function BulkAdd({ customers = [], onBulkAdd }) {
                 const assignedOtherGroup = assignedGroupId && !isChecked
                   ? groups.find((g) => g.id === assignedGroupId)
                   : null;
-                const isPaid = recentlyPaid.has(c.id);
+                const isPaid = paidTodayIds.has(c.id);
                 return (
                   <li
                     key={c.id}

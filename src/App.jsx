@@ -133,6 +133,7 @@ export default function App() {
             {activeTab === 'bulk' && (
               <BulkAdd
                 customers={customers}
+                payments={payments}
                 onBulkAdd={async (ids, amount) => {
                   // Add a payment for each selected customer using today's date
                   const { today } = await import('./utils/format');
