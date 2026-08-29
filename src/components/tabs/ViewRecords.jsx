@@ -180,25 +180,81 @@ function EditModal({ customer, onSave, onClose, onUploadPhoto, onDeletePhoto }) 
   );
 }
 
+// ── Payment amount → color mapping ─────────────────────────────────────
+// The most common (default) amount in the list stays the standard green.
+// Every other distinct amount gets its own unique color so it stands out.
+const PAYMENT_AMOUNT_COLORS = [
+  '#f59e0b', // amber
+  '#ef4444', // red
+  '#8b5cf6', // violet
+  '#0ea5e9', // sky
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f97316', // orange
+  '#a855f7', // purple
+  '#eab308', // yellow
+  '#06b6d4', // cyan
+];
+
+function buildAmountColorMap(payments) {
+  const freq = new Map();
+  payments.forEach((p) => {
+    const amt = Number(p.amount);
+    freq.set(amt, (freq.get(amt) || 0) + 1);
+  });
+
+  if (freq.size <= 1) return new Map(); // only one distinct amount — all default green
+
+  // Default amount = the most frequent one (ties broken by first seen)
+  let defaultAmount = null;
+  let maxCount = -1;
+  freq.forEach((count, amt) => {
+    if (count > maxCount) {
+      maxCount = count;
+      defaultAmount = amt;
+    }
+  });
+
+  const colorMap = new Map();
+  let colorIdx = 0;
+  freq.forEach((_, amt) => {
+    if (amt === defaultAmount) return;
+    colorMap.set(amt, PAYMENT_AMOUNT_COLORS[colorIdx % PAYMENT_AMOUNT_COLORS.length]);
+    colorIdx += 1;
+  });
+  return colorMap;
+}
+
 // ── Payment History Panel ──────────────────────────────────────────────
 function PaymentPanel({ payments }) {
+  const amountColorMap = useMemo(() => buildAmountColorMap(payments), [payments]);
+
   if (!payments.length) {
     return <p className={styles.noPayments}>No payment history.</p>;
   }
   const totalDaysPaid = new Set(payments.map((p) => p.payment_date)).size;
+  const totalAmount = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   return (
     <>
       <div className={styles.daysPaidRow}>
-        <span>Total Days Paid:</span>
-        <span className={styles.daysPaidCount}>{totalDaysPaid}</span>
+        <span>Total Days Paid: <strong>{totalDaysPaid}</strong></span>
+        <span>Total Amount: <strong>{formatCurrency(totalAmount)}</strong></span>
       </div>
       <ul className={styles.paymentList}>
-        {payments.map((p) => (
-          <li key={p.id} className={styles.paymentItem}>
-            <span className={styles.payAmt}>{formatCurrency(p.amount)}</span>
-            <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
-          </li>
-        ))}
+        {payments.map((p) => {
+          const customColor = amountColorMap.get(Number(p.amount));
+          return (
+            <li key={p.id} className={styles.paymentItem}>
+              <span
+                className={styles.payAmt}
+                style={customColor ? { color: customColor } : undefined}
+              >
+                {formatCurrency(p.amount)}
+              </span>
+              <span className={styles.payDate}>on {formatDate(p.payment_date)}</span>
+            </li>
+          );
+        })}
       </ul>
     </>
   );
