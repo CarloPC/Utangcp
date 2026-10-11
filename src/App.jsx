@@ -5,13 +5,16 @@ import { useCustomers } from './hooks/useCustomers';
 import { usePayments } from './hooks/usePayments';
 import { useSharedPassbooks } from './hooks/useSharedPassbooks';
 import { usePublicPassbook } from './hooks/usePublicPassbook';
-import { getShareIdFromUrl } from './utils/passbook';
+import { useSharedGroups } from './hooks/useSharedGroups';
+import { usePublicGroup } from './hooks/usePublicGroup';
+import { getShareIdFromUrl, getGroupIdFromUrl } from './utils/passbook';
 
 import AuthPage from './components/auth/AuthPage';
 import Header from './components/layout/Header';
 import NavTabs from './components/layout/NavTabs';
 import OfflineBanner from './components/shared/OfflineBanner';
 import CustomerPassbookModal from './components/shared/CustomerPassbookModal';
+import CustomerGroupView from './components/shared/CustomerGroupView';
 import InstallPopup from './components/shared/InstallPopup';
 import AddCustomer from './components/tabs/AddCustomer';
 import ViewRecords from './components/tabs/ViewRecords';
@@ -27,8 +30,10 @@ export default function App() {
   // Public passbook link (?share=<token>). Read once on first render.
   // When present, this tab is a guest view: no login, no private data.
   const [shareId] = useState(getShareIdFromUrl);
-  const isShareView = Boolean(shareId);
+  const [groupId] = useState(getGroupIdFromUrl); // ?group=<token> (bulk list)
+  const isShareView = Boolean(shareId || groupId);
   const publicPassbook = usePublicPassbook(shareId);
+  const publicGroup = usePublicGroup(groupId);
   const ownerUid = isShareView ? undefined : user?.uid;
 
   const {
@@ -44,6 +49,12 @@ export default function App() {
     usePayments(ownerUid);
 
   const { createShareLink, revokeShare } = useSharedPassbooks(
+    ownerUid,
+    customers,
+    payments,
+    !custLoading && !payLoading
+  );
+  const { groups, createGroupLink, revokeGroup } = useSharedGroups(
     ownerUid,
     customers,
     payments,
@@ -86,7 +97,22 @@ export default function App() {
   }, [user]);
 
   // Public passbook: render BEFORE the auth gates so guests never see AuthPage.
-  if (isShareView) {
+  if (groupId) {
+    return (
+      <>
+        <OfflineBanner />
+        <CustomerGroupView
+          group={publicGroup.data}
+          loading={publicGroup.loading}
+          error={publicGroup.error}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+      </>
+    );
+  }
+
+  if (shareId) {
     return (
       <>
         <OfflineBanner />
@@ -165,6 +191,9 @@ export default function App() {
                 onDeletePhoto={deleteCustomerPhoto}
                 onShare={createShareLink}
                 onUnshare={revokeShare}
+                groups={groups}
+                onBulkShare={createGroupLink}
+                onRevokeGroup={revokeGroup}
               />
             )}
             {activeTab === 'bulk' && (

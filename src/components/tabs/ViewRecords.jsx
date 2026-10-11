@@ -3,7 +3,8 @@ import Alert from '../shared/Alert';
 import ConfirmModal from '../shared/ConfirmModal';
 import CustomerProfileModal from './CustomerProfileModal';
 import { formatCurrency, formatDate, today } from '../../utils/format';
-import { copyText } from '../../utils/passbook';
+import { buildGroupUrl, copyText } from '../../utils/passbook';
+import { BulkShareModal, SharedLinksPanel } from './ShareLinks';
 import styles from './ViewRecords.module.css';
 
 function initials(customer) {
@@ -325,7 +326,7 @@ function CustomerRow({ customer, payments, onEdit, onDelete, onShare, onViewProf
 }
 
 // ── Main Component ───────────────────────────────────────────────────────
-export default function ViewRecords({ customers, payments, onUpdate, onDelete, onUploadPhoto, onDeletePhoto, onShare, onUnshare }) {
+export default function ViewRecords({ customers, payments, onUpdate, onDelete, onUploadPhoto, onDeletePhoto, onShare, onUnshare, groups = [], onBulkShare, onRevokeGroup }) {
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null);
@@ -333,6 +334,11 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
   const [deleting, setDeleting] = useState(false);
   const [unshareTarget, setUnshareTarget] = useState(null);
   const [unsharing, setUnsharing] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState('');
+  const [revokeGroupTarget, setRevokeGroupTarget] = useState(null);
+  const [revokingGroup, setRevokingGroup] = useState(false);
   const [search, setSearch] = useState('');
 
   const outstanding = useMemo(() => {
@@ -360,6 +366,9 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
           c.product_name?.toLowerCase().includes(q))
     );
   }, [customers, search]);
+
+  // Everything the current search matches (both tables) = the Bulk Share list
+  const matches = useMemo(() => [...outstanding, ...fullyPaid], [outstanding, fullyPaid]);
 
   // Always show the live record (profileTarget is only a click-time snapshot)
   const liveProfile = useMemo(
@@ -396,6 +405,50 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
     } catch {
       setAlert({ type: 'error', message: 'Could not create the share link. Please try again.' });
       return false;
+    }
+  };
+
+  const handleBulkShare = async (title) => {
+    setBulkBusy(true);
+    setBulkError('');
+    try {
+      const link = onBulkShare(title, matches.map((c) => c.id)); // sync: { url, ready }
+      const copied = copyText(link.url); // inside the click gesture
+      await link.ready;
+      setBulkOpen(false);
+      if (await copied) {
+        setAlert({ type: 'success', message: `Bulk passbook link for ${matches.length} customer(s) copied to clipboard!` });
+      } else {
+        window.prompt('Copy this bulk passbook link:', link.url);
+      }
+    } catch (err) {
+      setBulkError(
+        err?.message === 'too-large'
+          ? 'This list has too many customers/payments for one link. Narrow your search and try again.'
+          : 'Could not create the link. Please try again.'
+      );
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleCopyGroup = async (g) => {
+    const ok = await copyText(buildGroupUrl(g.id));
+    if (ok) setAlert({ type: 'success', message: 'Bulk passbook link copied to clipboard!' });
+    else window.prompt('Copy this bulk passbook link:', buildGroupUrl(g.id));
+  };
+
+  const handleRevokeGroupConfirm = async () => {
+    if (!revokeGroupTarget) return;
+    setRevokingGroup(true);
+    try {
+      await onRevokeGroup(revokeGroupTarget);
+      setAlert({ type: 'success', message: 'Link revoked. It no longer works.' });
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to revoke the link.' });
+    } finally {
+      setRevokingGroup(false);
+      setRevokeGroupTarget(null);
     }
   };
 
@@ -448,6 +501,25 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
           <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Reset</button>
         )}
       </div>
+
+      {/* Bulk share: search first, then share every result */}
+      <div className={styles.bulkRow}>
+        <button
+          type="button"
+          className="btn btn-primary btn-sm"
+          disabled={!search.trim() || matches.length === 0}
+          onClick={() => { setBulkError(''); setBulkOpen(true); }}
+        >
+          🔗 Bulk Share{search.trim() ? ` (${matches.length})` : ''}
+        </button>
+        {!search.trim() && <span className={styles.bulkHint}>Search for a name or item, then share all the results in one link.</span>}
+      </div>
+
+      <SharedLinksPanel
+        groups={groups}
+        onCopy={handleCopyGroup}
+        onRevoke={setRevokeGroupTarget}
+      />
 
       {/* Outstanding Table */}
       <div className={styles.section}>
@@ -549,6 +621,29 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
           onClose={() => setEditTarget(null)}
           onUploadPhoto={onUploadPhoto}
           onDeletePhoto={onDeletePhoto}
+        />
+      )}
+
+      {bulkOpen && (
+        <BulkShareModal
+          names={matches.map((c) => `${c.firstname} ${c.lastname}`)}
+          defaultTitle={search.trim()}
+          loading={bulkBusy}
+          error={bulkError}
+          onConfirm={handleBulkShare}
+          onCancel={() => setBulkOpen(false)}
+        />
+      )}
+
+      {revokeGroupTarget && (
+        <ConfirmModal
+          title="Revoke Link"
+          message={`Revoke the shared list "${revokeGroupTarget.title}"? Anyone with this link will no longer be able to open it.`}
+          onConfirm={handleRevokeGroupConfirm}
+          onCancel={() => setRevokeGroupTarget(null)}
+          loading={revokingGroup}
+          confirmLabel="Revoke"
+          loadingLabel="Revoking…"
         />
       )}
 

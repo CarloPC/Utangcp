@@ -2,6 +2,8 @@ import { formatCurrency } from './format';
 
 export const SHARE_PARAM = 'share';
 export const SHARE_COLLECTION = 'shared_passbooks';
+export const GROUP_PARAM = 'group';
+export const GROUP_COLLECTION = 'shared_groups';
 
 const DAY_MS = 86_400_000;
 
@@ -24,6 +26,15 @@ export function buildShareUrl(shareId) {
 // Returns the raw ?share= value (or null when the param is absent).
 export function getShareIdFromUrl() {
   const v = new URLSearchParams(window.location.search).get(SHARE_PARAM);
+  return v ? v.trim() : null;
+}
+
+export function buildGroupUrl(groupId) {
+  return `${window.location.origin}/?${GROUP_PARAM}=${groupId}`;
+}
+
+export function getGroupIdFromUrl() {
+  const v = new URLSearchParams(window.location.search).get(GROUP_PARAM);
   return v ? v.trim() : null;
 }
 
@@ -92,6 +103,30 @@ export function buildPassbookSnapshot(customer, customerPayments, ownerId) {
     payments,
   };
 }
+
+/* ────────────────────────────────────────────────────────────────
+   Bulk share: ONE public doc holding a sanitized snapshot of each
+   customer in the list (same fields as a single passbook).
+──────────────────────────────────────────────────────────────── */
+export const MAX_GROUP_BYTES = 900_000; // Firestore docs max out at ~1 MiB
+
+export function buildGroupSnapshot(title, customers, payments, ownerId) {
+  const byCredit = new Map();
+  payments.forEach((p) => {
+    if (!byCredit.has(p.credit_id)) byCredit.set(p.credit_id, []);
+    byCredit.get(p.credit_id).push(p);
+  });
+  const members = customers
+    .map((c) => {
+      const snap = buildPassbookSnapshot(c, byCredit.get(c.id) || [], ownerId);
+      delete snap.ownerId;
+      return snap;
+    })
+    .sort((a, b) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`));
+  return { ownerId, title: (title || '').trim() || 'Customer Passbooks', members };
+}
+
+export const isGroupTooLarge = (snap) => new Blob([JSON.stringify(snap)]).size > MAX_GROUP_BYTES;
 
 /* ────────────────────────────────────────────────────────────────
    Display logic (runs in the customer's browser)

@@ -310,3 +310,6 @@
     padding: 20px 16px;
   }
 }
+
+.bulkRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -10px 0 24px; }
+.bulkHint { font-size: 0.82rem; color: var(--color-text-muted); }
