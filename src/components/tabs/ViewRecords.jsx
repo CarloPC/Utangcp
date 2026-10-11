@@ -3,6 +3,7 @@ import Alert from '../shared/Alert';
 import ConfirmModal from '../shared/ConfirmModal';
 import CustomerProfileModal from './CustomerProfileModal';
 import { formatCurrency, formatDate, today } from '../../utils/format';
+import { copyText } from '../../utils/passbook';
 import styles from './ViewRecords.module.css';
 
 function initials(customer) {
@@ -261,7 +262,7 @@ function PaymentPanel({ payments }) {
 }
 
 // ── Customer Row ────────────────────────────────────────────────────────
-function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile, rowClassName, balanceClassName }) {
+function CustomerRow({ customer, payments, onEdit, onDelete, onShare, onViewProfile, rowClassName, balanceClassName }) {
   const [showHistory, setShowHistory] = useState(false);
 
   const customerPayments = useMemo(
@@ -296,6 +297,13 @@ function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile, rowC
         <td>
           <div className={styles.actions}>
             <button className="btn btn-warning btn-sm" onClick={() => onEdit(customer)}>Edit</button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => onShare(customer)}
+              title="Copy a read-only passbook link for this customer"
+            >
+              🔗 Share
+            </button>
             <button className="btn btn-danger btn-sm" onClick={() => onDelete(customer)}>Delete</button>
           </div>
           <button
@@ -317,12 +325,14 @@ function CustomerRow({ customer, payments, onEdit, onDelete, onViewProfile, rowC
 }
 
 // ── Main Component ───────────────────────────────────────────────────────
-export default function ViewRecords({ customers, payments, onUpdate, onDelete, onUploadPhoto, onDeletePhoto }) {
+export default function ViewRecords({ customers, payments, onUpdate, onDelete, onUploadPhoto, onDeletePhoto, onShare, onUnshare }) {
   const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null);
   const [alert, setAlert] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [unshareTarget, setUnshareTarget] = useState(null);
+  const [unsharing, setUnsharing] = useState(false);
   const [search, setSearch] = useState('');
 
   const outstanding = useMemo(() => {
@@ -351,6 +361,12 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
     );
   }, [customers, search]);
 
+  // Always show the live record (profileTarget is only a click-time snapshot)
+  const liveProfile = useMemo(
+    () => (profileTarget ? customers.find((c) => c.id === profileTarget.id) || profileTarget : null),
+    [customers, profileTarget]
+  );
+
   const profilePayments = useMemo(
     () => (profileTarget ? payments.filter((p) => p.credit_id === profileTarget.id) : []),
     [payments, profileTarget]
@@ -362,6 +378,38 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
       setAlert({ type: 'success', message: 'Customer record updated successfully!' });
     } catch {
       setAlert({ type: 'error', message: 'Failed to update record.' });
+    }
+  };
+
+  // Creates/reuses the public link and copies it. Returns true on success.
+  const handleShare = async (customer) => {
+    try {
+      const link = onShare(customer); // sync: { url, ready }
+      const copied = copyText(link.url); // start copy inside the click gesture
+      await link.ready;
+      if (await copied) {
+        setAlert({ type: 'success', message: 'Customer Passbook link copied to clipboard!' });
+      } else {
+        window.prompt('Copy this passbook link:', link.url);
+      }
+      return true;
+    } catch {
+      setAlert({ type: 'error', message: 'Could not create the share link. Please try again.' });
+      return false;
+    }
+  };
+
+  const handleUnshareConfirm = async () => {
+    if (!unshareTarget) return;
+    setUnsharing(true);
+    try {
+      await onUnshare(unshareTarget);
+      setAlert({ type: 'success', message: 'Sharing stopped. The old link no longer works.' });
+    } catch {
+      setAlert({ type: 'error', message: 'Failed to stop sharing.' });
+    } finally {
+      setUnsharing(false);
+      setUnshareTarget(null);
     }
   };
 
@@ -430,6 +478,7 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
                     payments={payments}
                     onEdit={setEditTarget}
                     onDelete={setDeleteTarget}
+                    onShare={handleShare}
                     onViewProfile={setProfileTarget}
                   />
                 ))
@@ -469,6 +518,7 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
                     payments={payments}
                     onEdit={setEditTarget}
                     onDelete={setDeleteTarget}
+                    onShare={handleShare}
                     onViewProfile={setProfileTarget}
                     rowClassName={styles.paidRow}
                     balanceClassName={styles.balancePos}
@@ -481,12 +531,14 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
         </div>
       )}
 
-      {profileTarget && (
+      {liveProfile && (
         <CustomerProfileModal
-          customer={profileTarget}
+          customer={liveProfile}
           payments={profilePayments}
           onClose={() => setProfileTarget(null)}
           onEdit={setEditTarget}
+          onShare={handleShare}
+          onUnshare={setUnshareTarget}
         />
       )}
 
@@ -497,6 +549,18 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
           onClose={() => setEditTarget(null)}
           onUploadPhoto={onUploadPhoto}
           onDeletePhoto={onDeletePhoto}
+        />
+      )}
+
+      {unshareTarget && (
+        <ConfirmModal
+          title="Stop Sharing"
+          message={`Disable the passbook link for "${unshareTarget.firstname} ${unshareTarget.lastname}"? Anyone who has the old link will no longer be able to open it.`}
+          onConfirm={handleUnshareConfirm}
+          onCancel={() => setUnshareTarget(null)}
+          loading={unsharing}
+          confirmLabel="Stop Sharing"
+          loadingLabel="Stopping…"
         />
       )}
 

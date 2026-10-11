@@ -3,11 +3,15 @@ import { useAuth } from './hooks/useAuth';
 import { useTheme } from './hooks/useTheme';
 import { useCustomers } from './hooks/useCustomers';
 import { usePayments } from './hooks/usePayments';
+import { useSharedPassbooks } from './hooks/useSharedPassbooks';
+import { usePublicPassbook } from './hooks/usePublicPassbook';
+import { getShareIdFromUrl } from './utils/passbook';
 
 import AuthPage from './components/auth/AuthPage';
 import Header from './components/layout/Header';
 import NavTabs from './components/layout/NavTabs';
 import OfflineBanner from './components/shared/OfflineBanner';
+import CustomerPassbookModal from './components/shared/CustomerPassbookModal';
 import InstallPopup from './components/shared/InstallPopup';
 import AddCustomer from './components/tabs/AddCustomer';
 import ViewRecords from './components/tabs/ViewRecords';
@@ -19,6 +23,14 @@ import styles from './App.module.css';
 
 export default function App() {
   const { user, logout } = useAuth();
+
+  // Public passbook link (?share=<token>). Read once on first render.
+  // When present, this tab is a guest view: no login, no private data.
+  const [shareId] = useState(getShareIdFromUrl);
+  const isShareView = Boolean(shareId);
+  const publicPassbook = usePublicPassbook(shareId);
+  const ownerUid = isShareView ? undefined : user?.uid;
+
   const {
     customers,
     loading: custLoading,
@@ -27,9 +39,16 @@ export default function App() {
     deleteCustomer,
     uploadCustomerPhoto,
     deleteCustomerPhoto,
-  } = useCustomers(user?.uid);
+  } = useCustomers(ownerUid);
   const { payments, loading: payLoading, addPayment, updatePayment, deletePayment, logInitialPayment } =
-    usePayments(user?.uid);
+    usePayments(ownerUid);
+
+  const { createShareLink, revokeShare } = useSharedPassbooks(
+    ownerUid,
+    customers,
+    payments,
+    !custLoading && !payLoading
+  );
 
   // Default tab is 'view' (matching daily.php behavior)
   const { isDark, toggleTheme } = useTheme();
@@ -65,6 +84,22 @@ export default function App() {
       sessionStorage.removeItem('installPopupShown');
     }
   }, [user]);
+
+  // Public passbook: render BEFORE the auth gates so guests never see AuthPage.
+  if (isShareView) {
+    return (
+      <>
+        <OfflineBanner />
+        <CustomerPassbookModal
+          passbook={publicPassbook.data}
+          loading={publicPassbook.loading}
+          error={publicPassbook.error}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
+        />
+      </>
+    );
+  }
 
   // Still resolving auth state
   if (user === undefined) {
@@ -128,6 +163,8 @@ export default function App() {
                 onDelete={deleteCustomer}
                 onUploadPhoto={uploadCustomerPhoto}
                 onDeletePhoto={deleteCustomerPhoto}
+                onShare={createShareLink}
+                onUnshare={revokeShare}
               />
             )}
             {activeTab === 'bulk' && (

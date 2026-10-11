@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { formatCurrency, formatDate } from '../../utils/format';
 import styles from './CustomerProfileModal.module.css';
 
@@ -7,7 +8,29 @@ function initials(customer) {
   return (a + b).toUpperCase() || '?';
 }
 
-export default function CustomerProfileModal({ customer, payments, onClose, onEdit }) {
+export default function CustomerProfileModal({ customer, payments, onClose, onEdit, onShare, onUnshare }) {
+  // idle | busy | done | error — drives the Share button label
+  const [shareState, setShareState] = useState('idle');
+
+  useEffect(() => {
+    if (shareState !== 'done' && shareState !== 'error') return undefined;
+    const t = setTimeout(() => setShareState('idle'), 2500);
+    return () => clearTimeout(t);
+  }, [shareState]);
+
+  const handleShare = async () => {
+    setShareState('busy');
+    const ok = await onShare(customer);
+    setShareState(ok ? 'done' : 'error');
+  };
+
+  const shareLabel = {
+    idle: customer.share_id ? '🔗 Copy Link' : '🔗 Share Passbook',
+    busy: 'Creating link…',
+    done: '✓ Link copied!',
+    error: 'Failed — retry',
+  }[shareState];
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()} role="dialog">
@@ -83,6 +106,21 @@ export default function CustomerProfileModal({ customer, payments, onClose, onEd
 
         <div className={styles.modalActions}>
           <button type="button" className="btn btn-ghost" onClick={onClose}>Close</button>
+          {onUnshare && customer.share_id && (
+            <button type="button" className="btn btn-ghost" onClick={() => onUnshare(customer)}>
+              Stop Sharing
+            </button>
+          )}
+          {onShare && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleShare}
+              disabled={shareState === 'busy'}
+            >
+              {shareLabel}
+            </button>
+          )}
           {onEdit && (
             <button type="button" className="btn btn-warning" onClick={() => { onClose(); onEdit(customer); }}>
               Edit Record

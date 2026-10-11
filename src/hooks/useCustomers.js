@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   writeBatch,
   getDocs,
+  getDoc,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { supabase } from '../supabase';
@@ -125,6 +126,10 @@ export function useCustomers(userId) {
 
   const deleteCustomer = useCallback(
     async (id) => {
+      // Remember the public passbook (if any) so the share link dies with the customer
+      const creditSnap = await getDoc(doc(db, 'users', userId, 'credits', id));
+      const shareId = creditSnap.data()?.share_id;
+
       const batch = writeBatch(db);
       // Remove related payment history docs
       const paymentsSnap = await getDocs(
@@ -135,6 +140,14 @@ export function useCustomers(userId) {
         .forEach((d) => batch.delete(d.ref));
       batch.delete(doc(db, 'users', userId, 'credits', id));
       await batch.commit();
+
+      if (shareId) {
+        try {
+          await deleteDoc(doc(db, 'shared_passbooks', shareId));
+        } catch {
+          // Non-fatal: customer is already deleted
+        }
+      }
     },
     [userId]
   );
