@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { getPassbookStatus } from '../../utils/passbook';
+import { peekArrival } from '../../utils/gcash';
 import CustomerPassbookModal from './CustomerPassbookModal';
 import styles from './CustomerGroupView.module.css';
 
@@ -73,6 +74,18 @@ export default function CustomerGroupView({ group, groupId, loading, error, isDa
         return !q || fullName(m).toLowerCase().includes(q) || (m.product_name || '').toLowerCase().includes(q);
       });
   }, [members, query, filter]);
+
+  // Came here from Messenger's "Open in browser": jump straight to that
+  // customer's passbook (the pay panel then saves the QR).
+  const arrivalHandled = useRef(false);
+  useEffect(() => {
+    if (arrivalHandled.current || !members.length) return;
+    const id = peekArrival();
+    if (!id) return;
+    arrivalHandled.current = true;
+    const idx = members.findIndex((m) => m.creditId === id);
+    if (idx >= 0) setOpenIdx(idx);
+  }, [members]);
 
   // The opened customer's passbook, plus what the pay panel needs from the
   // list itself: the owner id (for the receipt record) and the GCash QR.

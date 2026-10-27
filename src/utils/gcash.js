@@ -79,11 +79,46 @@ export function isInAppBrowser() {
 
 const isAndroid = () => /android/i.test(navigator.userAgent || '');
 
-// Android only: ask the system to open this page in the default browser.
-// (iPhone can't do this from a web page — the customer uses the ••• menu.)
-export function openInExternalBrowser() {
-  if (!isAndroid()) return false;
+/* ── Hand-off from Messenger to the real browser ───────────────────
+   The link we open/copy carries ?dl=<creditId>. When the page loads in a
+   normal browser with that param, the matching customer's passbook opens
+   and the QR downloads by itself. Captured once at startup, then removed
+   from the address bar so a refresh doesn't download it again. */
+const ARRIVAL_PARAM = 'dl';
+let arrivalCreditId = null;
+try {
   const u = new URL(window.location.href);
+  arrivalCreditId = u.searchParams.get(ARRIVAL_PARAM);
+  if (arrivalCreditId) {
+    u.searchParams.delete(ARRIVAL_PARAM);
+    window.history.replaceState(null, '', u.pathname + u.search + u.hash);
+  }
+} catch {
+  /* harmless */
+}
+
+// Which customer should auto-open (bulk list uses this to open the right card)
+export const peekArrival = () => arrivalCreditId;
+
+// True exactly once, for the matching customer
+export function consumeArrival(creditId) {
+  if (!arrivalCreditId || arrivalCreditId !== creditId) return false;
+  arrivalCreditId = null;
+  return true;
+}
+
+// Current page URL + the auto-download marker for this customer
+export function externalBrowserUrl(creditId) {
+  const u = new URL(window.location.href);
+  if (creditId) u.searchParams.set(ARRIVAL_PARAM, creditId);
+  return u.toString();
+}
+
+// Android only: ask the system to open this page in the default browser.
+// (iPhone can't do this from a web page — the customer pastes the copied link.)
+export function openInExternalBrowser(creditId) {
+  if (!isAndroid()) return false;
+  const u = new URL(externalBrowserUrl(creditId));
   window.location.href =
     `intent://${u.host}${u.pathname}${u.search}${u.hash}` +
     `#Intent;scheme=${u.protocol.replace(':', '')};action=android.intent.action.VIEW;end`;

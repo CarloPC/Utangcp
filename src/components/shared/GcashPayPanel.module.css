@@ -129,3 +129,11 @@
   flex: 1; padding: 10px 8px; border: 1.5px solid var(--color-border); border-radius: var(--radius-sm);
   background: var(--color-surface-2); color: var(--color-text); font-weight: 700; font-size: 0.85rem; cursor: pointer;
 }
+
+/* Shown after the Messenger -> browser hand-off */
+.arrived {
+  display: flex; flex-direction: column; gap: 4px;
+  margin: 12px 0 4px; padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--color-success-light); color: var(--color-success-text);
+  border: 1px solid var(--color-success-border); font-size: 0.875rem; line-height: 1.45;
+}
