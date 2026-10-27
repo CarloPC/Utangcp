@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { buildLedger, getPassbookStatus } from '../../utils/passbook';
+import GcashPayPanel from './GcashPayPanel';
 import styles from './CustomerPassbookModal.module.css';
 
 const TONE_CLASS = {
@@ -29,11 +30,12 @@ function Message({ title, text }) {
  * It only ever receives the sanitized `shared_passbooks` document —
  * there are no edit/delete/add-payment handlers anywhere in this tree.
  *
- * @param {{ passbook: object|null, loading?: boolean, error?: string|null,
+ * @param {{ passbook: object|null, shareId?: string, loading?: boolean, error?: string|null,
  *           onClose?: () => void, isDark?: boolean, onToggleTheme?: () => void }} props
  */
 export default function CustomerPassbookModal({
   passbook,
+  shareId,
   loading = false,
   error = null,
   onClose,
@@ -193,6 +195,9 @@ export default function CustomerPassbookModal({
             <p>{status.detail}</p>
           </div>
         </section>
+
+        {/* ── Pay with GCash (QR + receipt upload) ─────────────── */}
+        {shareId && <GcashPayPanel passbook={passbook} shareId={shareId} balance={status.balance} />}
 
         {/* ── Payment history ──────────────────────────────────── */}
         <section className={styles.history} aria-label="Payment history">

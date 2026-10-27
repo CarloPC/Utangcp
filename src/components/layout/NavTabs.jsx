@@ -53,19 +53,22 @@ const TABS = [
   },
 ];
 
-export default function NavTabs({ activeTab, onChange }) {
+export default function NavTabs({ activeTab, onChange, badges = {} }) {
   return (
     <nav className={styles.nav} aria-label="Main navigation">
       {TABS.map((tab) => (
         <button
           key={tab.id}
-          className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`}
+          className={`${styles.tab} ${styles.hasBadge} ${activeTab === tab.id ? styles.active : ''}`}
           onClick={() => onChange(tab.id)}
           aria-selected={activeTab === tab.id}
           role="tab"
         >
           <span className={styles.icon}>{tab.icon}</span>
           <span className={styles.label}>{tab.label}</span>
+          {badges[tab.id] > 0 && (
+            <span className={styles.badge} aria-label={`${badges[tab.id]} pending`}>{badges[tab.id]}</span>
+          )}
         </button>
       ))}
     </nav>

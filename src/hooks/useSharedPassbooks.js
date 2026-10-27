@@ -19,7 +19,7 @@ import {
  *   - keeps every shared copy in sync whenever customers/payments change
  *     (add / edit / delete a payment anywhere in the app -> link updates live)
  */
-export function useSharedPassbooks(userId, customers, payments, ready) {
+export function useSharedPassbooks(userId, customers, payments, ready, payInfo = null) {
   // shareId -> last JSON written, so we only write when something changed
   const synced = useRef(new Map());
 
@@ -33,7 +33,7 @@ export function useSharedPassbooks(userId, customers, payments, ready) {
     if (!userId || !ready) return; // never sync before data has fully loaded
     customers.forEach((c) => {
       if (!c.share_id) return;
-      const snap = buildPassbookSnapshot(c, paymentsFor(c.id), userId);
+      const snap = buildPassbookSnapshot(c, paymentsFor(c.id), userId, payInfo);
       const key = JSON.stringify(snap);
       if (synced.current.get(c.share_id) === key) return;
       synced.current.set(c.share_id, key);
@@ -42,7 +42,7 @@ export function useSharedPassbooks(userId, customers, payments, ready) {
         updatedAt: serverTimestamp(),
       }).catch(() => synced.current.delete(c.share_id)); // retry next change
     });
-  }, [userId, ready, customers, paymentsFor]);
+  }, [userId, ready, customers, paymentsFor, payInfo]);
 
   // ── Create (or re-use) a link ────────────────────────────────────
   // Returns { url, ready } synchronously so the caller can start the
@@ -55,7 +55,7 @@ export function useSharedPassbooks(userId, customers, payments, ready) {
       const url = buildShareUrl(shareId);
 
       const ready = (async () => {
-        const snap = buildPassbookSnapshot(customer, paymentsFor(customer.id), userId);
+        const snap = buildPassbookSnapshot(customer, paymentsFor(customer.id), userId, payInfo);
         synced.current.set(shareId, JSON.stringify(snap));
         try {
           await setDoc(doc(db, SHARE_COLLECTION, shareId), {
@@ -75,7 +75,7 @@ export function useSharedPassbooks(userId, customers, payments, ready) {
 
       return { url, ready };
     },
-    [userId, paymentsFor]
+    [userId, paymentsFor, payInfo]
   );
 
   // ── Revoke a link ────────────────────────────────────────────────

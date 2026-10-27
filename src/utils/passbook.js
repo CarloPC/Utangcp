@@ -73,7 +73,7 @@ export async function copyText(text) {
    ONLY whitelisted fields go in here — no mobile number, no owner
    email, no other customers, no store totals.
 ──────────────────────────────────────────────────────────────── */
-export function buildPassbookSnapshot(customer, customerPayments, ownerId) {
+export function buildPassbookSnapshot(customer, customerPayments, ownerId, payInfo = null) {
   const price = Number(customer.price) || 0;
   const paid = Number(customer.paid) || 0;
 
@@ -101,6 +101,8 @@ export function buildPassbookSnapshot(customer, customerPayments, ownerId) {
     paid,
     remaining_balance: price - paid,
     payments,
+    // Owner's GCash QR / payee (public by design — the customer must see it to pay)
+    payment: payInfo || null,
   };
 }
 
@@ -120,6 +122,7 @@ export function buildGroupSnapshot(title, customers, payments, ownerId) {
     .map((c) => {
       const snap = buildPassbookSnapshot(c, byCredit.get(c.id) || [], ownerId);
       delete snap.ownerId;
+      delete snap.payment;
       return snap;
     })
     .sort((a, b) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`));

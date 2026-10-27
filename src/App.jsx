@@ -7,6 +7,8 @@ import { useSharedPassbooks } from './hooks/useSharedPassbooks';
 import { usePublicPassbook } from './hooks/usePublicPassbook';
 import { useSharedGroups } from './hooks/useSharedGroups';
 import { usePublicGroup } from './hooks/usePublicGroup';
+import { usePaymentSettings } from './hooks/usePaymentSettings';
+import { usePaymentSubmissions } from './hooks/usePaymentSubmissions';
 import { getShareIdFromUrl, getGroupIdFromUrl } from './utils/passbook';
 
 import AuthPage from './components/auth/AuthPage';
@@ -20,6 +22,7 @@ import AddCustomer from './components/tabs/AddCustomer';
 import ViewRecords from './components/tabs/ViewRecords';
 import Statistics from './components/tabs/Statistics';
 import PaymentHistory from './components/tabs/PaymentHistory';
+import GcashPayments from './components/tabs/GcashPayments';
 import BulkAdd from './components/tabs/BulkAdd';
 
 import styles from './App.module.css';
@@ -48,11 +51,15 @@ export default function App() {
   const { payments, loading: payLoading, addPayment, updatePayment, deletePayment, logInitialPayment } =
     usePayments(ownerUid);
 
+  const paymentSettings = usePaymentSettings(ownerUid);
+  const submissions = usePaymentSubmissions(ownerUid, addPayment);
+
   const { createShareLink, revokeShare } = useSharedPassbooks(
     ownerUid,
     customers,
     payments,
-    !custLoading && !payLoading
+    !custLoading && !payLoading && !paymentSettings.loading,
+    paymentSettings.payInfo
   );
   const { groups, createGroupLink, revokeGroup } = useSharedGroups(
     ownerUid,
@@ -118,6 +125,7 @@ export default function App() {
         <OfflineBanner />
         <CustomerPassbookModal
           passbook={publicPassbook.data}
+          shareId={shareId}
           loading={publicPassbook.loading}
           error={publicPassbook.error}
           isDark={isDark}
@@ -164,7 +172,11 @@ export default function App() {
           switches it to position: fixed, bottom: 0 via media query — DOM
           position stops mattering at that point, but keeping it here is
           what makes the desktop layout correct. */}
-      <NavTabs activeTab={activeTab} onChange={setActiveTab} />
+      <NavTabs
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        badges={{ payments: submissions.pending.length }}
+      />
 
       <main className={`${styles.main} ${styles.mainWithBottomNav}`}>
         {isLoading ? (
@@ -212,13 +224,25 @@ export default function App() {
             )}
             {activeTab === 'stats' && <Statistics customers={customers} />}
             {activeTab === 'payments' && (
-              <PaymentHistory
-                customers={customers}
-                payments={payments}
-                onAdd={addPayment}
-                onUpdate={updatePayment}
-                onDelete={deletePayment}
-              />
+              <>
+                <GcashPayments
+                  settings={paymentSettings.settings}
+                  onSaveSettings={paymentSettings.saveSettings}
+                  onRemoveQr={paymentSettings.removeQr}
+                  pending={submissions.pending}
+                  reviewed={submissions.reviewed}
+                  onApprove={submissions.approve}
+                  onReject={submissions.reject}
+                  onRemove={submissions.remove}
+                />
+                <PaymentHistory
+                  customers={customers}
+                  payments={payments}
+                  onAdd={addPayment}
+                  onUpdate={updatePayment}
+                  onDelete={deletePayment}
+                />
+              </>
             )}
           </>
         )}
