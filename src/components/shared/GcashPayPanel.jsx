@@ -15,9 +15,9 @@ const STATUS = {
  * Public "Pay with GCash" section for the customer passbook.
  * Shows the owner's QR (with one-click download) and a receipt form.
  */
-export default function GcashPayPanel({ passbook, shareId, balance }) {
+export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
   const pay = passbook.payment;
-  const { submissions, submit } = useMySubmissions(shareId, passbook);
+  const { submissions, submit } = useMySubmissions({ shareId, groupId }, passbook);
 
   const [amount, setAmount] = useState('');
   const [referenceNo, setReferenceNo] = useState('');

@@ -52,7 +52,7 @@ function Card({ member, onOpen }) {
  * Public, read-only list of customers (the "garage"). Tapping a card opens that
  * customer's full passbook. Receives ONLY the sanitized shared_groups document.
  */
-export default function CustomerGroupView({ group, loading, error, isDark, onToggleTheme }) {
+export default function CustomerGroupView({ group, groupId, loading, error, isDark, onToggleTheme }) {
   const [query, setQuery] = useState('');
   const [openIdx, setOpenIdx] = useState(null);
   const [filter, setFilter] = useState('all'); // all | ongoing | settled
@@ -73,6 +73,16 @@ export default function CustomerGroupView({ group, loading, error, isDark, onTog
         return !q || fullName(m).toLowerCase().includes(q) || (m.product_name || '').toLowerCase().includes(q);
       });
   }, [members, query, filter]);
+
+  // The opened customer's passbook, plus what the pay panel needs from the
+  // list itself: the owner id (for the receipt record) and the GCash QR.
+  const selected = useMemo(
+    () =>
+      openIdx !== null && members[openIdx]
+        ? { ...members[openIdx], ownerId: group.ownerId, payment: group.payment || null }
+        : null,
+    [openIdx, members, group]
+  );
 
   useEffect(() => {
     const meta = document.createElement('meta');
@@ -109,7 +119,6 @@ export default function CustomerGroupView({ group, loading, error, isDark, onTog
     );
   }
 
-  const selected = openIdx !== null ? members[openIdx] : null;
 
   return (
     <div className={styles.overlay}>
@@ -178,6 +187,7 @@ export default function CustomerGroupView({ group, loading, error, isDark, onTog
       {selected && (
         <CustomerPassbookModal
           passbook={selected}
+          groupId={groupId}
           onClose={() => setOpenIdx(null)}
           isDark={isDark}
           onToggleTheme={onToggleTheme}

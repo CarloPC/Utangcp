@@ -112,7 +112,7 @@ export function buildPassbookSnapshot(customer, customerPayments, ownerId, payIn
 ──────────────────────────────────────────────────────────────── */
 export const MAX_GROUP_BYTES = 900_000; // Firestore docs max out at ~1 MiB
 
-export function buildGroupSnapshot(title, customers, payments, ownerId) {
+export function buildGroupSnapshot(title, customers, payments, ownerId, payInfo = null) {
   const byCredit = new Map();
   payments.forEach((p) => {
     if (!byCredit.has(p.credit_id)) byCredit.set(p.credit_id, []);
@@ -126,7 +126,15 @@ export function buildGroupSnapshot(title, customers, payments, ownerId) {
       return snap;
     })
     .sort((a, b) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`));
-  return { ownerId, title: (title || '').trim() || 'Customer Passbooks', members };
+  return {
+    ownerId,
+    title: (title || '').trim() || 'Customer Passbooks',
+    // GCash QR/payee once for the whole list; memberIds lets the security
+    // rules confirm a receipt is for a customer that is really in this list.
+    payment: payInfo || null,
+    memberIds: members.map((m) => m.creditId),
+    members,
+  };
 }
 
 export const isGroupTooLarge = (snap) => new Blob([JSON.stringify(snap)]).size > MAX_GROUP_BYTES;

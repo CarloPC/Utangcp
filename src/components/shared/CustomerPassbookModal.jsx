@@ -30,12 +30,13 @@ function Message({ title, text }) {
  * It only ever receives the sanitized `shared_passbooks` document —
  * there are no edit/delete/add-payment handlers anywhere in this tree.
  *
- * @param {{ passbook: object|null, shareId?: string, loading?: boolean, error?: string|null,
+ * @param {{ passbook: object|null, shareId?: string, groupId?: string, loading?: boolean, error?: string|null,
  *           onClose?: () => void, isDark?: boolean, onToggleTheme?: () => void }} props
  */
 export default function CustomerPassbookModal({
   passbook,
   shareId,
+  groupId,
   loading = false,
   error = null,
   onClose,
@@ -197,7 +198,9 @@ export default function CustomerPassbookModal({
         </section>
 
         {/* ── Pay with GCash (QR + receipt upload) ─────────────── */}
-        {shareId && <GcashPayPanel passbook={passbook} shareId={shareId} balance={status.balance} />}
+        {(shareId || groupId) && (
+          <GcashPayPanel passbook={passbook} shareId={shareId} groupId={groupId} balance={status.balance} />
+        )}
 
         {/* ── Payment history ──────────────────────────────────── */}
         <section className={styles.history} aria-label="Payment history">

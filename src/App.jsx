@@ -65,7 +65,8 @@ export default function App() {
     ownerUid,
     customers,
     payments,
-    !custLoading && !payLoading
+    !custLoading && !payLoading && !paymentSettings.loading,
+    paymentSettings.payInfo
   );
 
   // Default tab is 'view' (matching daily.php behavior)
@@ -110,6 +111,7 @@ export default function App() {
         <OfflineBanner />
         <CustomerGroupView
           group={publicGroup.data}
+          groupId={groupId}
           loading={publicGroup.loading}
           error={publicGroup.error}
           isDark={isDark}
