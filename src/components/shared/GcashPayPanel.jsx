@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMySubmissions } from '../../hooks/useMySubmissions';
-import { downloadImage, validateImageFile } from '../../utils/gcash';
+import {
+  downloadImage,
+  isInAppBrowser,
+  openInExternalBrowser,
+  shareImageFile,
+  validateImageFile,
+} from '../../utils/gcash';
+import { copyText } from '../../utils/passbook';
 import { formatCurrency, formatDate } from '../../utils/format';
 import styles from './GcashPayPanel.module.css';
 
@@ -26,7 +33,9 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [dlNote, setDlNote] = useState('');
+  const [saveOpen, setSaveOpen] = useState(false); // "press and hold to save" sheet
+  const [copied, setCopied] = useState(false);
+  const inApp = useMemo(isInAppBrowser, []);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -48,9 +57,18 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
   if (!pay?.gcash_qr_url || balance <= 0) return null;
 
   const handleDownload = async () => {
-    setDlNote('');
-    const ok = await downloadImage(pay.gcash_qr_url, 'gcash-qr');
-    if (!ok) setDlNote('Opened the QR in a new tab — press and hold it to save.');
+    // Messenger/Facebook in-app browsers can't save files: go straight to the
+    // share sheet, or the press-and-hold sheet when that isn't available.
+    if (inApp) {
+      if (!(await shareImageFile(pay.gcash_qr_url))) setSaveOpen(true);
+      return;
+    }
+    if (!(await downloadImage(pay.gcash_qr_url, 'gcash-qr'))) setSaveOpen(true);
+  };
+
+  const handleCopyLink = async () => {
+    setCopied(await copyText(window.location.href));
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const handleFile = (e) => {
@@ -115,7 +133,11 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
         <button type="button" className={styles.downloadBtn} onClick={handleDownload}>
           ⬇ Download QR Code
         </button>
-        {dlNote && <p className={styles.hint}>{dlNote}</p>}
+        {inApp && (
+          <p className={styles.hint}>
+            Tip: if saving doesn&apos;t work here, tap <b>•••</b> and choose <b>Open in browser</b>.
+          </p>
+        )}
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -200,6 +222,30 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {saveOpen && (
+        <div className={styles.saveOverlay} role="dialog" aria-modal="true" aria-label="Save QR code" onClick={() => setSaveOpen(false)}>
+          <div className={styles.saveSheet} onClick={(e) => e.stopPropagation()}>
+            <button type="button" className={styles.saveClose} onClick={() => setSaveOpen(false)} aria-label="Close">✕</button>
+            <p className={styles.saveTitle}>Save the QR code</p>
+            <img src={pay.gcash_qr_url} alt="GCash QR code" className={styles.saveQr} />
+            <p className={styles.saveHelp}>
+              <b>Press and hold</b> the QR code, then tap <b>Save image</b> (or <b>Add to Photos</b>).
+            </p>
+            {inApp && (
+              <div className={styles.saveActions}>
+                <button type="button" onClick={() => openInExternalBrowser() || handleCopyLink()}>
+                  Open in browser
+                </button>
+                <button type="button" onClick={handleCopyLink}>
+                  {copied ? 'Link copied ✓' : 'Copy link'}
+                </button>
+              </div>
+            )}
+            {inApp && <p className={styles.hint}>On iPhone: tap ••• → Open in Safari.</p>}
+          </div>
         </div>
       )}
     </section>

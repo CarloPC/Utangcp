@@ -69,11 +69,48 @@ export async function removeStoredFile(path) {
 
 export const randomName = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+// Messenger / Facebook / Instagram etc. open links in an in-app WebView that
+// silently ignores "download" links. Detect it so we can offer something that works.
+export function isInAppBrowser() {
+  return /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Messenger|Instagram|Line\/|Snapchat|TikTok|MicroMessenger|Viber/i.test(
+    navigator.userAgent || ''
+  );
+}
+
+const isAndroid = () => /android/i.test(navigator.userAgent || '');
+
+// Android only: ask the system to open this page in the default browser.
+// (iPhone can't do this from a web page — the customer uses the ••• menu.)
+export function openInExternalBrowser() {
+  if (!isAndroid()) return false;
+  const u = new URL(window.location.href);
+  window.location.href =
+    `intent://${u.host}${u.pathname}${u.search}${u.hash}` +
+    `#Intent;scheme=${u.protocol.replace(':', '')};action=android.intent.action.VIEW;end`;
+  return true;
+}
+
+// Native share sheet with the image attached (has "Save Image" / "Save to Photos").
+// Returns true if the sheet was shown; false if unsupported or it failed.
+export async function shareImageFile(url, baseName = 'gcash-qr') {
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const file = new File([blob], `${baseName}.${extFor(blob)}`, { type: blob.type || 'image/png' });
+    if (!navigator.canShare || !navigator.canShare({ files: [file] })) return false;
+    await navigator.share({ files: [file], title: 'GCash QR' });
+    return true;
+  } catch (err) {
+    // User closing the sheet counts as handled; anything else = unsupported
+    return err?.name === 'AbortError';
+  }
+}
+
 /**
- * One-click image download. Fetches the image as a blob so the browser
- * saves it instead of navigating to it. If the fetch is blocked (CORS /
- * offline) it falls back to opening the image in a new tab so the
- * customer can still long-press / save it. Returns true on a real download.
+ * One-click image download for normal browsers (Chrome, Safari, Firefox...).
+ * Returns true when the browser saved the file, false when the caller
+ * should show the "press and hold to save" fallback instead.
  */
 export async function downloadImage(url, baseName = 'gcash-qr') {
   try {
@@ -90,7 +127,6 @@ export async function downloadImage(url, baseName = 'gcash-qr') {
     setTimeout(() => URL.revokeObjectURL(obj), 2000);
     return true;
   } catch {
-    window.open(url, '_blank', 'noopener');
     return false;
   }
 }

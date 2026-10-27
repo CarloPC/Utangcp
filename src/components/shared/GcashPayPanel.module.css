@@ -99,3 +99,33 @@
 .pending { background: var(--color-warning-light); color: var(--color-warning-text); }
 .approved { background: var(--color-success-light); color: var(--color-success-text); }
 .rejected { background: var(--color-danger-light); color: var(--color-danger-text); }
+
+/* "Press and hold to save" sheet (for in-app browsers like Messenger) */
+.saveOverlay {
+  position: fixed; inset: 0; z-index: 4000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(0, 0, 0, 0.7);
+}
+.saveSheet {
+  position: relative; width: min(360px, 100%); max-height: 100%; overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 20px 16px 16px; border-radius: var(--radius-lg);
+  background: var(--color-surface); color: var(--color-text);
+}
+.saveClose {
+  position: absolute; top: 8px; right: 8px; width: 34px; height: 34px;
+  border: none; border-radius: 50%; background: var(--color-surface-2);
+  color: var(--color-text); font-size: 1rem; cursor: pointer;
+}
+.saveTitle { font-size: 1.05rem; font-weight: 800; }
+/* long-press saving needs the image to stay selectable/callout-enabled */
+.saveQr {
+  width: min(280px, 100%); height: auto; background: #fff; padding: 8px; border-radius: var(--radius-sm);
+  -webkit-touch-callout: default; -webkit-user-select: auto; user-select: auto;
+}
+.saveHelp { font-size: 0.9rem; text-align: center; color: var(--color-text-secondary); }
+.saveActions { display: flex; gap: 8px; width: 100%; }
+.saveActions button {
+  flex: 1; padding: 10px 8px; border: 1.5px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-surface-2); color: var(--color-text); font-weight: 700; font-size: 0.85rem; cursor: pointer;
+}
