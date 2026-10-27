@@ -9,12 +9,15 @@ import './utils/installPromptStore';
 import './index.css';
 import App from './App.jsx';
 import { registerSW } from 'virtual:pwa-register';
+import PullToRefresh from './components/shared/PullToRefresh';
 
-registerSW({
+const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
     if (confirm('A new version of Credit Management is available. Reload now?')) {
-      window.location.reload();
+      // updateSW(true) activates the waiting service worker AND reloads;
+      // a bare location.reload() would just serve the old cached version again.
+      updateSW(true);
     }
   },
   onOfflineReady() {
@@ -25,5 +28,6 @@ registerSW({
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
+    <PullToRefresh />
   </StrictMode>
 );
