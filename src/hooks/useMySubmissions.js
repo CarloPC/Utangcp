@@ -1,44 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
-import { addDoc, collection, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, limit, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { SUBMISSIONS } from './usePaymentSubmissions';
 import { compressImage, extFor, randomName, uploadPublicFile } from '../utils/gcash';
 
-const storeKey = (shareId) => `utangcp:submissions:${shareId}`;
-
-function readIds(shareId) {
-  try {
-    const v = JSON.parse(localStorage.getItem(storeKey(shareId)) || '[]');
-    return Array.isArray(v) ? v.filter((x) => typeof x === 'string').slice(0, 20) : [];
-  } catch {
-    return [];
-  }
-}
+const tsMillis = (s) => s.createdAt?.toMillis?.() ?? Date.now(); // just-sent docs have no server time yet
 
 /**
  * Customer-side (no login). Uploads the receipt, creates the
- * `payment_submissions` doc with status "pending", and remembers its id in
- * this browser so the customer can watch it go Pending -> Approved/Rejected.
+ * `payment_submissions` doc with status "pending", and live-loads every
+ * submission for this customer from Firestore (not from this browser), so the
+ * Pending / Approved / Rejected list is the same on any device or browser
+ * that opens the link.
  */
 export function useMySubmissions({ shareId, groupId }, passbook) {
   const token = shareId || groupId; // the link token (individual or bulk)
-  const [ids, setIds] = useState(() => readIds(token));
-  const [byId, setById] = useState({});
+  const creditId = passbook.creditId;
+  const [submissions, setSubmissions] = useState([]);
 
-  const idsKey = ids.join(',');
   useEffect(() => {
-    const unsubs = ids.map((id) =>
-      onSnapshot(
-        doc(db, SUBMISSIONS, id),
-        (snap) => {
-          if (snap.exists()) setById((m) => ({ ...m, [id]: { id, ...snap.data() } }));
-        },
-        () => {}
-      )
+    if (!token || !creditId) return undefined;
+    const q = query(
+      collection(db, SUBMISSIONS),
+      where(shareId ? 'shareId' : 'groupId', '==', token),
+      where('creditId', '==', creditId),
+      limit(50)
     );
-    return () => unsubs.forEach((u) => u());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey]);
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        rows.sort((a, b) => tsMillis(b) - tsMillis(a));
+        setSubmissions(rows);
+      },
+      () => {}
+    );
+    return unsub;
+  }, [shareId, token, creditId]);
 
   const submit = useCallback(
     async ({ amount, file }) => {
@@ -59,19 +57,10 @@ export function useMySubmissions({ shareId, groupId }, passbook) {
         status: 'pending', // shown to the owner as "Pending Review"
         createdAt: serverTimestamp(),
       });
-      const next = [ref.id, ...readIds(token)].slice(0, 20);
-      try {
-        localStorage.setItem(storeKey(token), JSON.stringify(next));
-      } catch {
-        /* private mode: status tracking just won't persist */
-      }
-      setIds(next);
       return ref.id;
     },
     [shareId, groupId, token, passbook]
   );
 
-  // A bulk link holds many customers: only show this customer's own receipts
-  const mine = ids.map((id) => byId[id]).filter((s) => s && s.creditId === passbook.creditId);
-  return { submissions: mine, submit };
+  return { submissions, submit };
 }
