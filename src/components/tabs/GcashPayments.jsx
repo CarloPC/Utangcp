@@ -128,7 +128,7 @@ function PendingCard({ sub, duplicate, onApprove, onReject, onZoom }) {
           {sub.productName && <span> · {sub.productName}</span>}
         </p>
         <p className={styles.meta}>
-          Ref <b>{sub.referenceNo}</b> · {formatDate(dateOf(sub))}
+          {sub.referenceNo && <>Ref <b>{sub.referenceNo}</b> · </>}{formatDate(dateOf(sub))}
         </p>
         {duplicate && <p className={styles.warn}>⚠ Same reference number appears in another submission.</p>}
 
@@ -172,12 +172,13 @@ export default function GcashPayments({ settings, onSaveSettings, onRemoveQr, pe
   const dupRefs = useMemo(() => {
     const count = new Map();
     [...pending, ...reviewed].forEach((s) => {
+      if (!s.referenceNo) return; // new submissions have no reference number
       const k = String(s.referenceNo).replace(/\s|-/g, '').toLowerCase();
       count.set(k, (count.get(k) || 0) + 1);
     });
     return count;
   }, [pending, reviewed]);
-  const isDup = (s) => dupRefs.get(String(s.referenceNo).replace(/\s|-/g, '').toLowerCase()) > 1;
+  const isDup = (s) => !!s.referenceNo && dupRefs.get(String(s.referenceNo).replace(/\s|-/g, '').toLowerCase()) > 1;
 
   return (
     <div className={styles.wrap}>
@@ -208,7 +209,7 @@ export default function GcashPayments({ settings, onSaveSettings, onRemoveQr, pe
                   </button>
                   <div className={styles.subBody}>
                     <p className={styles.who}><strong>{s.customerName}</strong> · {formatCurrency(s.approvedAmount ?? s.amount)}</p>
-                    <p className={styles.meta}>Ref {s.referenceNo} · {formatDate(dateOf(s))}</p>
+                    <p className={styles.meta}>{s.referenceNo && `Ref ${s.referenceNo} · `}{formatDate(dateOf(s))}</p>
                   </div>
                   <span className={s.status === 'approved' ? styles.badgeOk : styles.badgeNo}>
                     {s.status === 'approved' ? 'Approved' : 'Rejected'}

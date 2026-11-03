@@ -41,7 +41,7 @@ export function useMySubmissions({ shareId, groupId }, passbook) {
   }, [idsKey]);
 
   const submit = useCallback(
-    async ({ amount, referenceNo, file }) => {
+    async ({ amount, file }) => {
       const blob = await compressImage(file);
       const { url, path } = await uploadPublicFile(
         `receipts/${token}/${randomName()}.${extFor(blob)}`,
@@ -54,7 +54,6 @@ export function useMySubmissions({ shareId, groupId }, passbook) {
         customerName: `${passbook.firstname} ${passbook.lastname}`.trim().slice(0, 120),
         productName: (passbook.product_name || '').slice(0, 120),
         amount: Number(amount),
-        referenceNo: referenceNo.trim(),
         receiptUrl: url,
         receiptPath: path,
         status: 'pending', // shown to the owner as "Pending Review"

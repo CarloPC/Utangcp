@@ -12,7 +12,6 @@ import { copyText } from '../../utils/passbook';
 import { formatCurrency, formatDate } from '../../utils/format';
 import styles from './GcashPayPanel.module.css';
 
-const REF_RE = /^[A-Za-z0-9 -]{4,40}$/;
 const STATUS = {
   pending: { label: 'Pending Review', cls: 'pending' },
   approved: { label: 'Approved', cls: 'approved' },
@@ -28,7 +27,6 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
   const { submissions, submit } = useMySubmissions({ shareId, groupId }, passbook);
 
   const [amount, setAmount] = useState('');
-  const [referenceNo, setReferenceNo] = useState('');
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -108,15 +106,13 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
     const amt = Number(amount);
     if (!(amt > 0)) return setError('Enter the amount you paid.');
     if (amt > balance) return setError(`The amount can't be more than your balance (${formatCurrency(balance)}).`);
-    if (!REF_RE.test(referenceNo.trim())) return setError('Enter the reference number shown on your GCash receipt.');
     if (!file) return setError('Please attach a screenshot of your GCash receipt.');
 
     setBusy(true);
     try {
-      await submit({ amount: amt, referenceNo, file });
+      await submit({ amount: amt, file });
       setSuccess(true);
       setAmount('');
-      setReferenceNo('');
       setFile(null);
       if (fileRef.current) fileRef.current.value = '';
     } catch {
@@ -186,20 +182,6 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
           />
         </label>
 
-        <label className={styles.field}>
-          <span>Reference number / Transaction ID</span>
-          <input
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={40}
-            value={referenceNo}
-            onChange={(e) => setReferenceNo(e.target.value)}
-            placeholder="e.g. 1234 567 890123"
-            disabled={busy}
-          />
-        </label>
-
         <div className={styles.field}>
           <span>GCash receipt screenshot</span>
           <input
@@ -238,8 +220,7 @@ export default function GcashPayPanel({ passbook, shareId, groupId, balance }) {
                   <div>
                     <strong>{formatCurrency(s.amount)}</strong>
                     <span className={styles.meta}>
-                      Ref {s.referenceNo}
-                      {when && ` · ${formatDate(when.toISOString().slice(0, 10))}`}
+                      {when && formatDate(when.toISOString().slice(0, 10))}
                     </span>
                     {s.status === 'rejected' && s.rejectReason && (
                       <span className={styles.meta}>Reason: {s.rejectReason}</span>
