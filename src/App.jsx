@@ -224,7 +224,7 @@ export default function App() {
                 }}
               />
             )}
-            {activeTab === 'stats' && <Statistics customers={customers} />}
+            {activeTab === 'stats' && <Statistics customers={customers} payments={payments} />}
             {activeTab === 'payments' && (
               <>
                 <GcashPayments
