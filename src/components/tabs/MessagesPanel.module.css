@@ -1,0 +1,138 @@
+/* Above everything in the owner app except the photo preview (4500). */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 10, 20, 0.6);
+  animation: fade 0.18s ease-out;
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  width: min(960px, 100%);
+  height: min(740px, 92vh);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: rise 0.22s ease-out;
+}
+
+/* ── List ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.listHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px;
+}
+.listHead h2 { margin: 0; font-size: 1.15rem; color: var(--color-text); }
+.closeBtn {
+  width: 34px; height: 34px;
+  border: none; border-radius: 50%;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.closeBtn:hover { background: var(--color-border); }
+
+.searchWrap { flex: none; padding: 4px 16px 12px; }
+.search {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.88rem;
+}
+.search:focus { outline: none; border-color: var(--color-border-focus); }
+
+.threads { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.empty { padding: 28px 20px; text-align: center; color: var(--color-text-secondary); font-size: 0.9rem; line-height: 1.5; }
+
+.thread {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.thread:hover { background: var(--color-surface-2); }
+.threadActive { background: var(--color-primary-light); }
+
+.avatar, .avatarFallback { flex: none; width: 44px; height: 44px; border-radius: 50%; }
+.avatar { object-fit: cover; border: 1px solid var(--color-border); }
+.avatarFallback {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-primary); color: #fff; font-weight: 700; font-size: 0.9rem;
+}
+
+.threadBody { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.threadTop { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.threadTop strong { font-size: 0.93rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.threadTop time { flex: none; font-size: 0.72rem; color: var(--color-text-muted); }
+.unreadName { color: var(--color-primary); }
+.product { font-size: 0.76rem; color: var(--color-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preview { font-size: 0.84rem; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.previewUnread { color: var(--color-text); font-weight: 600; }
+
+.badge {
+  flex: none;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.72rem; font-weight: 700;
+}
+
+/* ── Conversation ── */
+.convo { min-width: 0; min-height: 0; }
+.placeholder {
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+}
+.placeholder span { font-size: 2.4rem; }
+
+/* ── Phones: one pane at a time ── */
+@media (max-width: 760px) {
+  .backdrop { align-items: stretch; }
+  .panel {
+    grid-template-columns: 1fr;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    border-radius: 0;
+  }
+  .convo { display: none; }
+  .hasSelection .list { display: none; }
+  .hasSelection .convo { display: block; }
+}
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .backdrop, .panel { animation: none; } }

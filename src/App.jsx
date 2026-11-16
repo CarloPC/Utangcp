@@ -9,6 +9,7 @@ import { useSharedGroups } from './hooks/useSharedGroups';
 import { usePublicGroup } from './hooks/usePublicGroup';
 import { usePaymentSettings } from './hooks/usePaymentSettings';
 import { usePaymentSubmissions } from './hooks/usePaymentSubmissions';
+import { useOwnerChats } from './hooks/useChat';
 import { getShareIdFromUrl, getGroupIdFromUrl } from './utils/passbook';
 
 import AuthPage from './components/auth/AuthPage';
@@ -23,6 +24,7 @@ import AddCustomer from './components/tabs/AddCustomer';
 import ViewRecords from './components/tabs/ViewRecords';
 import Statistics from './components/tabs/Statistics';
 import PaymentHistory from './components/tabs/PaymentHistory';
+import MessagesPanel from './components/tabs/MessagesPanel';
 import GcashPayments from './components/tabs/GcashPayments';
 import BulkAdd from './components/tabs/BulkAdd';
 
@@ -54,6 +56,8 @@ export default function App() {
 
   const paymentSettings = usePaymentSettings(ownerUid);
   const submissions = usePaymentSubmissions(ownerUid, addPayment);
+  const chats = useOwnerChats(ownerUid);
+  const [messagesOpen, setMessagesOpen] = useState(false);
 
   const { createShareLink, revokeShare } = useSharedPassbooks(
     ownerUid,
@@ -168,6 +172,8 @@ export default function App() {
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onOpenInstall={() => setShowInstallModal(true)}
+        unreadMessages={chats.totalUnread}
+        onOpenMessages={() => setMessagesOpen(true)}
       />
 
       {/* On desktop (>1340px) this renders in normal flow, right where your
@@ -247,6 +253,14 @@ export default function App() {
           </>
         )}
       </main>
+
+      {messagesOpen && (
+        <MessagesPanel
+          threads={chats.threads}
+          customers={customers}
+          onClose={() => setMessagesOpen(false)}
+        />
+      )}
 
       <InstallPopup open={showInstallModal} onClose={() => setShowInstallModal(false)} />
     </div>

@@ -1,0 +1,218 @@
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ── Header ── */
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: max(12px, env(safe-area-inset-top)) 14px 12px;
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: #fff;
+}
+.headBtn {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.headBtn:hover { background: rgba(255, 255, 255, 0.3); }
+.headAvatar,
+.headAvatarFallback {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+}
+.headAvatar { object-fit: cover; }
+.headAvatarFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.headText { display: flex; flex-direction: column; min-width: 0; }
+.headText strong { font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.headText span { font-size: 0.78rem; opacity: 0.85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Message list ── */
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day { display: flex; justify-content: center; margin: 10px 0 4px; }
+.day span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  padding: 3px 12px;
+  border-radius: 999px;
+}
+
+.row { display: flex; flex-direction: column; align-items: flex-start; max-width: 100%; }
+.rowMine { align-items: flex-end; }
+
+.bubble {
+  max-width: min(82%, 460px);
+  padding: 8px 12px 6px;
+  border-radius: 16px;
+  overflow-wrap: anywhere;
+  box-shadow: var(--shadow-xs);
+}
+.bubbleTheirs {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+.bubbleMine {
+  background: var(--color-primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+[data-theme="dark"] .bubbleMine { background: var(--color-primary-dark); }
+
+.text { margin: 0; white-space: pre-wrap; font-size: 0.93rem; line-height: 1.4; }
+.meta { display: block; margin-top: 3px; text-align: right; font-size: 0.66rem; opacity: 0.7; }
+
+.photo {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  max-height: 300px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.status { margin-top: 2px; padding: 0 4px; font-size: 0.68rem; color: var(--color-text-muted); }
+.statusSeen { color: var(--color-primary); font-weight: 600; }
+
+/* ── Empty / loading ── */
+.empty {
+  margin: auto;
+  max-width: 300px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.emptyIcon { font-size: 2.2rem; display: block; margin-bottom: 8px; }
+
+.skelWrap { display: flex; flex-direction: column; gap: 12px; }
+.skel {
+  display: block;
+  height: 38px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, var(--color-border) 0%, var(--color-surface-2) 40%, var(--color-surface-2) 60%, var(--color-border) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+.skelMine { align-self: flex-end; }
+[data-theme="dark"] .skel {
+  background: linear-gradient(90deg, #1F2E4A 0%, #2B3D61 40%, #2B3D61 60%, #1F2E4A 100%);
+  background-size: 200% 100%;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Composer ── */
+.composer {
+  flex: none;
+  padding: 10px 12px max(12px, env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.pending { position: relative; width: 84px; margin-bottom: 8px; }
+.pending img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid var(--color-border); display: block; }
+.pending button {
+  position: absolute; top: -8px; right: -8px;
+  width: 24px; height: 24px; border-radius: 50%;
+  border: none; background: var(--color-danger); color: #fff;
+  font-size: 0.7rem; cursor: pointer;
+}
+
+.error { margin: 0 0 8px; font-size: 0.8rem; color: var(--color-danger); }
+
+.inputRow { display: flex; align-items: flex-end; gap: 8px; }
+.attach {
+  flex: none;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.attach:hover:not(:disabled) { border-color: var(--color-primary); }
+.input {
+  flex: 1;
+  min-width: 0;
+  max-height: 120px;
+  resize: none;
+  padding: 10px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  field-sizing: content;
+}
+.input:focus { outline: none; border-color: var(--color-border-focus); }
+.sendBtn {
+  flex: none;
+  height: 42px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sendBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }

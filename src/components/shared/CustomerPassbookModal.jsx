@@ -4,6 +4,8 @@ import { buildLedger, getPassbookStatus } from '../../utils/passbook';
 import GcashPayPanel from './GcashPayPanel';
 import styles from './CustomerPassbookModal.module.css';
 import ZoomableImage from './ImageLightbox';
+import PassbookChat from './PassbookChat';
+import { useChatUnread } from '../../hooks/useChat';
 
 const TONE_CLASS = {
   success: styles.toneSuccess,
@@ -46,6 +48,8 @@ export default function CustomerPassbookModal({
 }) {
   const [query, setQuery] = useState('');
   const [newestFirst, setNewestFirst] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatUnread = useChatUnread(passbook?.creditId);
 
   const status = useMemo(() => (passbook ? getPassbookStatus(passbook) : null), [passbook]);
   const ledger = useMemo(() => (passbook ? buildLedger(passbook) : []), [passbook]);
@@ -118,6 +122,18 @@ export default function CustomerPassbookModal({
           <div className={styles.topBar}>
             <span className={styles.brand}>UtangCP Passbook</span>
             <div className={styles.topActions}>
+              {(shareId || groupId) && passbook.ownerId && passbook.creditId && (
+                <button
+                  type="button"
+                  className={`${styles.iconBtn} ${styles.chatBtn}`}
+                  onClick={() => setChatOpen(true)}
+                  aria-label={chatUnread ? `Message the store (${chatUnread} new)` : 'Message the store'}
+                  title="Message the store"
+                >
+                  💬
+                  {chatUnread > 0 && <span className={styles.chatBadge}>{chatUnread > 9 ? '9+' : chatUnread}</span>}
+                </button>
+              )}
               {onToggleTheme && (
                 <button type="button" className={styles.iconBtn} onClick={onToggleTheme} aria-label="Toggle light/dark theme">
                   {isDark ? '☀️' : '🌙'}
@@ -266,6 +282,8 @@ export default function CustomerPassbookModal({
           {updated && ` Last updated ${updated.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`}
         </footer>
       </div>
+
+      {chatOpen && <PassbookChat passbook={passbook} onClose={() => setChatOpen(false)} />}
     </div>
   );
 }

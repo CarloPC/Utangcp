@@ -1,0 +1,36 @@
+/* Above the passbook (2000) and GCash panel (4000); below photo preview (4500). */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 10, 20, 0.6);
+  animation: fade 0.18s ease-out;
+}
+
+.panel {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  background: var(--color-bg);
+  overflow: hidden;
+  animation: rise 0.22s ease-out;
+}
+
+@media (min-width: 640px) {
+  .panel {
+    width: 480px;
+    height: min(760px, 92vh);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop, .panel { animation: none; }
+}

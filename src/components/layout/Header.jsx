@@ -3,7 +3,7 @@ import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import styles from './Header.module.css';
 import installStyles from './InstallRow.module.css';
 
-export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenInstall }) {
+export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenInstall, unreadMessages = 0, onOpenMessages }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const { canInstall, isInstalled, isIOSInstallable } = useInstallPrompt();
@@ -50,7 +50,10 @@ export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenIn
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <span className={styles.avatar}>{initials}</span>
+          <span className={styles.avatar}>
+            {initials}
+            {unreadMessages > 0 && <span className={styles.avatarDot} aria-hidden="true" />}
+          </span>
           <svg
             className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
             viewBox="0 0 20 20"
@@ -116,6 +119,33 @@ export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenIn
               <span className={styles.toggleThumb} />
             </button>
           </div>
+
+          {/* Messages — customer chats from shared passbooks */}
+          {onOpenMessages && (
+            <>
+              <div className={styles.divider} />
+              <div className={styles.dropdownRow}>
+                <div className={styles.rowLeft}>
+                  <span className={styles.rowIcon} aria-hidden="true">💬</span>
+                  <span className={styles.rowLabel}>Messages</span>
+                  {unreadMessages > 0 && (
+                    <span className={styles.msgBadge}>{unreadMessages > 99 ? '99+' : unreadMessages}</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className={styles.viewBtn}
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false);
+                    onOpenMessages();
+                  }}
+                >
+                  View
+                </button>
+              </div>
+            </>
+          )}
 
           {/* Install App — dedicated, always-available entry point.
               Mobile-only (see InstallRow.module.css); hides itself once

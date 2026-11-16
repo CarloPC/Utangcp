@@ -66,6 +66,29 @@
   background: rgba(255, 255, 255, 0.22);
 }
 
+.chatBtn {
+  position: relative;
+}
+
+.chatBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff;
+}
+
 .iconBtn:focus-visible,
 .sortBtn:focus-visible,
 .search:focus-visible {
