@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatCurrency, formatDate } from '../../utils/format';
+import ZoomableImage from '../shared/ImageLightbox';
 import styles from './CustomerProfileModal.module.css';
 
 function initials(customer) {
@@ -42,7 +43,7 @@ export default function CustomerProfileModal({ customer, payments, onClose, onEd
         <div className={styles.body}>
           <div className={styles.photoSection}>
             {customer.photo_url ? (
-              <img
+              <ZoomableImage
                 src={customer.photo_url}
                 alt={`${customer.firstname} ${customer.lastname}`}
                 className={styles.photo}

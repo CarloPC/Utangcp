@@ -3,6 +3,7 @@ import { formatCurrency, formatDate } from '../../utils/format';
 import { buildLedger, getPassbookStatus } from '../../utils/passbook';
 import GcashPayPanel from './GcashPayPanel';
 import styles from './CustomerPassbookModal.module.css';
+import ZoomableImage from './ImageLightbox';
 
 const TONE_CLASS = {
   success: styles.toneSuccess,
@@ -132,7 +133,7 @@ export default function CustomerPassbookModal({
 
           <div className={styles.identity}>
             {passbook.photo_url ? (
-              <img src={passbook.photo_url} alt={fullName} className={styles.avatar} />
+              <ZoomableImage src={passbook.photo_url} alt={fullName} className={styles.avatar} />
             ) : (
               <div className={styles.avatarFallback}>{initials(passbook)}</div>
             )}

@@ -1,0 +1,126 @@
+/* ── Skeleton loading (shimmer) ──
+   Uses the theme variables so it looks right in both light and dark mode. */
+
+.skel {
+  --skel-base: var(--color-border);
+  --skel-shine: var(--color-surface-2);
+  display: block;
+  border-radius: var(--radius-sm);
+  background-color: var(--skel-base);
+  background-image: linear-gradient(
+    90deg,
+    var(--skel-base) 0%,
+    var(--skel-shine) 40%,
+    var(--skel-shine) 60%,
+    var(--skel-base) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skel {
+  --skel-base: #1F2E4A;
+  --skel-shine: #2B3D61;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Building blocks */
+.line   { height: 14px; }
+.lineSm { height: 10px; }
+.title  { height: 22px; width: 220px; max-width: 60%; margin-bottom: 24px; }
+.label  { height: 10px; width: 110px; margin-bottom: 10px; }
+.input  { height: 42px; }
+.button { height: 40px; width: 140px; border-radius: var(--radius-sm); }
+.pill   { height: 22px; width: 70px; border-radius: 999px; }
+
+/* Layout (mirrors the real tab so nothing jumps when data arrives) */
+.wrapper {
+  padding: 30px;
+}
+
+.card {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tableWrap {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface);
+  margin-top: 28px;
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: 1.6fr 1.4fr 1fr 1fr 1.2fr;
+  gap: 16px;
+  padding: 15px;
+  background: linear-gradient(135deg, #2D3748, #1A2436);
+}
+
+.tableHead .skel {
+  height: 10px;
+  width: 60%;
+  --skel-base: rgba(255, 255, 255, 0.18);
+  --skel-shine: rgba(255, 255, 255, 0.34);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.6fr 1.4fr 1fr 1fr 1.2fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions .skel {
+  height: 28px;
+  width: 52px;
+}
+
+@media (max-width: 720px) {
+  .wrapper { padding: 16px; }
+  .grid3,
+  .grid2 { grid-template-columns: 1fr; }
+  .tableHead,
+  .row { grid-template-columns: 1.4fr 1fr 1fr; }
+  .tableHead > :nth-child(n+4),
+  .row > :nth-child(n+4) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}

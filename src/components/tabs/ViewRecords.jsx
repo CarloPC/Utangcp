@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, today } from '../../utils/format';
 import { buildGroupUrl, copyText } from '../../utils/passbook';
 import { BulkShareModal, SharedLinksPanel } from './ShareLinks';
 import styles from './ViewRecords.module.css';
+import ZoomableImage from '../shared/ImageLightbox';
 
 function initials(customer) {
   const a = customer.firstname?.[0] || '';
@@ -18,13 +19,14 @@ const MAX_PHOTO_MB = 5;
 // ── Avatar (used in the table + edit modal) ─────────────────────────────
 function Avatar({ customer, size = 40, onClick }) {
   const style = { width: size, height: size, fontSize: size * 0.4 };
+  // With a photo, clicking opens it full-screen so you can verify who the
+  // customer is. Without one, the initials circle still opens the profile.
   return customer.photo_url ? (
-    <img
+    <ZoomableImage
       src={customer.photo_url}
       alt={`${customer.firstname} ${customer.lastname}`}
       className={styles.avatarImg}
       style={style}
-      onClick={onClick}
     />
   ) : (
     <div className={styles.avatarFallback} style={style} onClick={onClick}>

@@ -65,6 +65,24 @@ function EditPaymentModal({ payment, customers, onSave, onClose }) {
   );
 }
 
+// Does a payment match the "Search by Customer or Product" box?
+// Matches customer name / product text, and ALSO the payment amount:
+// typing a number (e.g. "300" or "₱1,500") matches every payment whose
+// amount is exactly that number.
+function matchesSearchText(p, customer, rawQuery) {
+  const q = rawQuery.trim().toLowerCase();
+  if (!q) return true;
+  if (customer) {
+    const text = (customer.firstname + ' ' + customer.lastname + ' ' + (customer.product_name || '')).toLowerCase();
+    if (text.includes(q)) return true;
+  }
+  const numeric = q.replace(/[₱,\s]/g, '');
+  if (numeric !== '' && !Number.isNaN(Number(numeric))) {
+    return Number(p.amount) === Number(numeric);
+  }
+  return false;
+}
+
 // ── Main Component ──
 export default function PaymentHistory({ customers, payments, onAdd, onUpdate, onDelete }) {
   const [form, setForm] = useState({ credit_id: '', amount: '', payment_date: today() });
@@ -122,16 +140,28 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
 
   // Filter payments
   const filtered = useMemo(() => {
-    return enriched.filter((p) => {
+    const result = enriched.filter((p) => {
       if (!p.customer) return false;
-      const nameMatch =
-        !searchName ||
-        (p.customer.firstname + ' ' + p.customer.lastname + ' ' + (p.customer.product_name || ''))
-          .toLowerCase()
-          .includes(searchName.toLowerCase());
+      const nameMatch = matchesSearchText(p, p.customer, searchName);
       const dateMatch = !searchDate || p.payment_date === searchDate;
       return nameMatch && dateMatch;
     });
+
+    // When a payment date is selected, list the results alphabetically by
+    // customer name (then product, then amount) so names are easy to find.
+    if (searchDate) {
+      const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+      result.sort((a, b) => {
+        const nameA = `${a.customer.firstname} ${a.customer.lastname}`.trim();
+        const nameB = `${b.customer.firstname} ${b.customer.lastname}`.trim();
+        return (
+          collator.compare(nameA, nameB) ||
+          collator.compare(a.customer.product_name || '', b.customer.product_name || '') ||
+          (a.amount || 0) - (b.amount || 0)
+        );
+      });
+    }
+    return result;
   }, [enriched, searchName, searchDate]);
 
   const outstandingPayments = filtered.filter((p) => p.customer?.remaining_balance > 0);
@@ -166,21 +196,16 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
   // Search totals (from daily.php feature)
   const searchTotal = useMemo(() => {
     if (!searchDate && !searchName) return null;
-    const subset = searchDate && !searchName
-      ? payments.filter((p) => p.payment_date === searchDate)
-      : searchName && !searchDate
-        ? payments.filter((p) => {
-            const c = customers.find((c) => c.id === p.credit_id);
-            if (!c) return false;
-            return (c.firstname + ' ' + c.lastname + ' ' + (c.product_name || ''))
-              .toLowerCase()
-              .includes(searchName.toLowerCase());
-          })
-        : filtered;
+    const subset = payments.filter((p) => {
+      if (searchDate && p.payment_date !== searchDate) return false;
+      if (!searchName) return true;
+      const c = customers.find((c) => c.id === p.credit_id);
+      return matchesSearchText(p, c, searchName);
+    });
     const total = subset.reduce((s, p) => s + (p.amount || 0), 0);
     const daysPaid = new Set(subset.map((p) => p.payment_date)).size;
     return { total, daysPaid };
-  }, [payments, customers, searchName, searchDate, filtered]);
+  }, [payments, customers, searchName, searchDate]);
 
   // When searching by name in the history tables, let the user know if
   // that customer already has a payment recorded today.
@@ -376,7 +401,7 @@ export default function PaymentHistory({ customers, payments, onAdd, onUpdate, o
             <label className="label">Search by Customer or Product</label>
             <input
               className="input"
-              placeholder="Enter name or product"
+              placeholder="Enter name, product or amount"
               value={searchName}
               onChange={(e) => setSearchName(e.target.value)}
             />

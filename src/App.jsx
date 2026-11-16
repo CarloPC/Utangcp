@@ -15,6 +15,7 @@ import AuthPage from './components/auth/AuthPage';
 import Header from './components/layout/Header';
 import NavTabs from './components/layout/NavTabs';
 import OfflineBanner from './components/shared/OfflineBanner';
+import TabSkeleton from './components/shared/Skeleton';
 import CustomerPassbookModal from './components/shared/CustomerPassbookModal';
 import CustomerGroupView from './components/shared/CustomerGroupView';
 import InstallPopup from './components/shared/InstallPopup';
@@ -182,10 +183,7 @@ export default function App() {
 
       <main className={`${styles.main} ${styles.mainWithBottomNav}`}>
         {isLoading ? (
-          <div className={styles.innerLoading}>
-            <span className={styles.spinner} />
-            <p>Loading your data…</p>
-          </div>
+          <TabSkeleton variant={activeTab === 'payments' ? 'payments' : 'table'} />
         ) : (
           <>
             {activeTab === 'add' && (
