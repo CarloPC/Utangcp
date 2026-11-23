@@ -73,7 +73,7 @@ export async function copyText(text) {
    ONLY whitelisted fields go in here — no mobile number, no owner
    email, no other customers, no store totals.
 ──────────────────────────────────────────────────────────────── */
-export function buildPassbookSnapshot(customer, customerPayments, ownerId, payInfo = null) {
+export function buildPassbookSnapshot(customer, customerPayments, ownerId, payInfo = null, ownerProfile = null) {
   const price = Number(customer.price) || 0;
   const paid = Number(customer.paid) || 0;
 
@@ -103,6 +103,8 @@ export function buildPassbookSnapshot(customer, customerPayments, ownerId, payIn
     payments,
     // Owner's GCash QR / payee (public by design — the customer must see it to pay)
     payment: payInfo || null,
+    // Store owner's public name + photo, so the customer can verify who they chat with
+    owner: ownerProfile || null,
   };
 }
 
@@ -112,7 +114,7 @@ export function buildPassbookSnapshot(customer, customerPayments, ownerId, payIn
 ──────────────────────────────────────────────────────────────── */
 export const MAX_GROUP_BYTES = 900_000; // Firestore docs max out at ~1 MiB
 
-export function buildGroupSnapshot(title, customers, payments, ownerId, payInfo = null) {
+export function buildGroupSnapshot(title, customers, payments, ownerId, payInfo = null, ownerProfile = null) {
   const byCredit = new Map();
   payments.forEach((p) => {
     if (!byCredit.has(p.credit_id)) byCredit.set(p.credit_id, []);
@@ -123,6 +125,7 @@ export function buildGroupSnapshot(title, customers, payments, ownerId, payInfo 
       const snap = buildPassbookSnapshot(c, byCredit.get(c.id) || [], ownerId);
       delete snap.ownerId;
       delete snap.payment;
+      delete snap.owner;
       return snap;
     })
     .sort((a, b) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`));
@@ -132,6 +135,7 @@ export function buildGroupSnapshot(title, customers, payments, ownerId, payInfo 
     // GCash QR/payee once for the whole list; memberIds lets the security
     // rules confirm a receipt is for a customer that is really in this list.
     payment: payInfo || null,
+    owner: ownerProfile || null,
     memberIds: members.map((m) => m.creditId),
     members,
   };

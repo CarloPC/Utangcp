@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import styles from './Header.module.css';
 import installStyles from './InstallRow.module.css';
+import { initialsOf } from '../../utils/avatar';
 
-export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenInstall, unreadMessages = 0, onOpenMessages }) {
+export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenInstall, unreadMessages = 0, onOpenMessages, profile = null, onEditProfile }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
   const { canInstall, isInstalled, isIOSInstallable } = useInstallPrompt();
@@ -21,7 +22,13 @@ export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenIn
     return () => document.removeEventListener('mousedown', handleClick);
   }, [open]);
 
-  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : '?';
+  const displayName = (profile?.displayName || '').trim();
+  const photoUrl = profile?.photo_url || null;
+  const initials = displayName
+    ? initialsOf(displayName)
+    : user?.email
+      ? user.email.slice(0, 2).toUpperCase()
+      : '?';
 
   const today = new Date().toLocaleDateString('en-PH', {
     weekday: 'short',
@@ -51,7 +58,7 @@ export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenIn
           aria-haspopup="menu"
         >
           <span className={styles.avatar}>
-            {initials}
+            {photoUrl ? <img src={photoUrl} alt="" className={styles.avatarImg} /> : initials}
             {unreadMessages > 0 && <span className={styles.avatarDot} aria-hidden="true" />}
           </span>
           <svg
@@ -76,14 +83,27 @@ export default function Header({ user, onLogout, isDark, onToggleTheme, onOpenIn
           role="menu"
           aria-label="User menu"
         >
-          {/* User info */}
-          <div className={styles.dropdownProfile}>
-            <span className={styles.dropdownAvatar}>{initials}</span>
-            <div className={styles.dropdownUserInfo}>
-              <p className={styles.dropdownEmail}>{user?.email}</p>
-              <p className={styles.dropdownRole}>Account Owner</p>
-            </div>
-          </div>
+          {/* User info — click to edit profile (name + photo) */}
+          <button
+            type="button"
+            className={styles.profileBtn}
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onEditProfile?.();
+            }}
+            aria-label="Edit profile"
+          >
+            <span className={styles.dropdownAvatar}>
+              {photoUrl ? <img src={photoUrl} alt="" className={styles.avatarImg} /> : initials}
+            </span>
+            <span className={styles.dropdownUserInfo}>
+              {displayName && <span className={styles.dropdownName}>{displayName}</span>}
+              <span className={styles.dropdownEmail}>{user?.email}</span>
+              <span className={styles.dropdownRole}>Account Owner</span>
+            </span>
+            <span className={styles.editHint} aria-hidden="true">✎ Edit</span>
+          </button>
 
           <div className={styles.divider} />
 

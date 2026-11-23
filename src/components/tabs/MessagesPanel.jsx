@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ChatWindow from '../shared/ChatWindow';
+import Avatar from '../shared/Avatar';
 import styles from './MessagesPanel.module.css';
-
-const initialsOf = (name = '') =>
-  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
 
 function relTime(ts) {
   const d = ts?.toDate?.();
@@ -94,11 +92,7 @@ export default function MessagesPanel({ threads, customers, onClose }) {
                     className={`${styles.thread} ${t.id === selectedId ? styles.threadActive : ''}`}
                     onClick={() => setSelectedId(t.id)}
                   >
-                    {photo ? (
-                      <img src={photo} alt="" className={styles.avatar} />
-                    ) : (
-                      <span className={styles.avatarFallback}>{initialsOf(t.customerName)}</span>
-                    )}
+                    <Avatar url={photo} name={t.customerName} size={44} />
                     <span className={styles.threadBody}>
                       <span className={styles.threadTop}>
                         <strong className={unread ? styles.unreadName : ''}>{t.customerName || 'Customer'}</strong>

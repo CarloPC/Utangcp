@@ -3,6 +3,7 @@ import { formatCurrency, formatDate } from '../../utils/format';
 import { getPassbookStatus } from '../../utils/passbook';
 import { peekArrival } from '../../utils/gcash';
 import CustomerPassbookModal from './CustomerPassbookModal';
+import { useChatUnread } from '../../hooks/useChat';
 import styles from './CustomerGroupView.module.css';
 
 const TONE = { success: styles.toneSuccess, warning: styles.toneWarning, danger: styles.toneDanger };
@@ -13,8 +14,14 @@ const initials = (m) => ((m.firstname?.[0] || '') + (m.lastname?.[0] || '')).toU
 
 function Card({ member, onOpen }) {
   const s = useMemo(() => getPassbookStatus(member), [member]);
+  const unread = useChatUnread(member.creditId); // new replies from the store
   return (
     <button type="button" className={styles.card} onClick={onOpen}>
+      {unread > 0 && (
+        <span className={styles.unread} aria-label={`${unread} new message${unread > 1 ? 's' : ''} from the store`}>
+          💬 {unread > 9 ? '9+' : unread}
+        </span>
+      )}
       <div className={styles.cardTop}>
         {member.photo_url ? (
           <img src={member.photo_url} alt="" className={styles.avatar} />
@@ -92,7 +99,7 @@ export default function CustomerGroupView({ group, groupId, loading, error, isDa
   const selected = useMemo(
     () =>
       openIdx !== null && members[openIdx]
-        ? { ...members[openIdx], ownerId: group.ownerId, payment: group.payment || null }
+        ? { ...members[openIdx], ownerId: group.ownerId, payment: group.payment || null, owner: group.owner || null }
         : null,
     [openIdx, members, group]
   );

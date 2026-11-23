@@ -122,21 +122,23 @@ export default function CustomerPassbookModal({
           <div className={styles.topBar}>
             <span className={styles.brand}>UtangCP Passbook</span>
             <div className={styles.topActions}>
-              {(shareId || groupId) && passbook.ownerId && passbook.creditId && (
-                <button
-                  type="button"
-                  className={`${styles.iconBtn} ${styles.chatBtn}`}
-                  onClick={() => setChatOpen(true)}
-                  aria-label={chatUnread ? `Message the store (${chatUnread} new)` : 'Message the store'}
-                  title="Message the store"
-                >
-                  💬
-                  {chatUnread > 0 && <span className={styles.chatBadge}>{chatUnread > 9 ? '9+' : chatUnread}</span>}
-                </button>
-              )}
               {onToggleTheme && (
                 <button type="button" className={styles.iconBtn} onClick={onToggleTheme} aria-label="Toggle light/dark theme">
                   {isDark ? '☀️' : '🌙'}
+                </button>
+              )}
+              {(shareId || groupId) && passbook.ownerId && passbook.creditId && (
+                <button
+                  type="button"
+                  className={styles.chatBtn}
+                  onClick={() => setChatOpen(true)}
+                  aria-label={chatUnread ? `Message the store (${chatUnread} new)` : 'Message the store'}
+                >
+                  <span className={styles.chatIcon} aria-hidden="true">💬</span>
+                  <span className={styles.chatLabel}>
+                    Message<span className={styles.chatLabelMore}> Us</span>
+                  </span>
+                  {chatUnread > 0 && <span className={styles.chatBadge}>{chatUnread > 9 ? '9+' : chatUnread}</span>}
                 </button>
               )}
               {onClose && (

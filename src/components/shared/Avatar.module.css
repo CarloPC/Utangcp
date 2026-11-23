@@ -1,0 +1,17 @@
+.avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  user-select: none;
+}
+.img { object-fit: cover; background: var(--color-surface-2); }
+.fallback {
+  background: linear-gradient(135deg, #2D68C4, #4facfe);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.ring { border: 2px solid rgba(255, 255, 255, 0.55); }

@@ -8,12 +8,14 @@ import { usePublicPassbook } from './hooks/usePublicPassbook';
 import { useSharedGroups } from './hooks/useSharedGroups';
 import { usePublicGroup } from './hooks/usePublicGroup';
 import { usePaymentSettings } from './hooks/usePaymentSettings';
+import { useOwnerProfile } from './hooks/useOwnerProfile';
 import { usePaymentSubmissions } from './hooks/usePaymentSubmissions';
 import { useOwnerChats } from './hooks/useChat';
 import { getShareIdFromUrl, getGroupIdFromUrl } from './utils/passbook';
 
 import AuthPage from './components/auth/AuthPage';
 import Header from './components/layout/Header';
+import ProfileModal from './components/layout/ProfileModal';
 import NavTabs from './components/layout/NavTabs';
 import OfflineBanner from './components/shared/OfflineBanner';
 import TabSkeleton from './components/shared/Skeleton';
@@ -57,21 +59,25 @@ export default function App() {
   const paymentSettings = usePaymentSettings(ownerUid);
   const submissions = usePaymentSubmissions(ownerUid, addPayment);
   const chats = useOwnerChats(ownerUid);
+  const ownerProfile = useOwnerProfile(ownerUid);
   const [messagesOpen, setMessagesOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const { createShareLink, revokeShare } = useSharedPassbooks(
     ownerUid,
     customers,
     payments,
-    !custLoading && !payLoading && !paymentSettings.loading,
-    paymentSettings.payInfo
+    !custLoading && !payLoading && !paymentSettings.loading && !ownerProfile.loading,
+    paymentSettings.payInfo,
+    ownerProfile.publicProfile
   );
   const { groups, createGroupLink, revokeGroup } = useSharedGroups(
     ownerUid,
     customers,
     payments,
-    !custLoading && !payLoading && !paymentSettings.loading,
-    paymentSettings.payInfo
+    !custLoading && !payLoading && !paymentSettings.loading && !ownerProfile.loading,
+    paymentSettings.payInfo,
+    ownerProfile.publicProfile
   );
 
   // Default tab is 'view' (matching daily.php behavior)
@@ -174,6 +180,8 @@ export default function App() {
         onOpenInstall={() => setShowInstallModal(true)}
         unreadMessages={chats.totalUnread}
         onOpenMessages={() => setMessagesOpen(true)}
+        profile={ownerProfile.profile}
+        onEditProfile={() => setProfileOpen(true)}
       />
 
       {/* On desktop (>1340px) this renders in normal flow, right where your
@@ -259,6 +267,15 @@ export default function App() {
           threads={chats.threads}
           customers={customers}
           onClose={() => setMessagesOpen(false)}
+        />
+      )}
+
+      {profileOpen && (
+        <ProfileModal
+          user={user}
+          profile={ownerProfile.profile}
+          onSave={ownerProfile.saveProfile}
+          onClose={() => setProfileOpen(false)}
         />
       )}
 

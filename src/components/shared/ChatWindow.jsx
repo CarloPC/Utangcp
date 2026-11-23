@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useChat, MAX_TEXT } from '../../hooks/useChat';
+import { useChat, MAX_TEXT, REACTIONS, REACTION_BY_KEY } from '../../hooks/useChat';
 import { validateImageFile } from '../../utils/gcash';
 import ZoomableImage from './ImageLightbox';
+import Avatar from './Avatar';
 import styles from './ChatWindow.module.css';
 
 const QUICK_REPLIES = [
@@ -21,9 +22,6 @@ const dayLabel = (d) => {
   if (d.toDateString() === yest.toDateString()) return 'Yesterday';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
-const initialsOf = (name = '') =>
-  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
-
 /**
  * One conversation. Used by the customer (inside the public passbook) and
  * by the owner (inside the Messages panel) — `role` decides which side "me" is.
@@ -34,11 +32,20 @@ export default function ChatWindow({
   meta, // customer side: { ownerId, customerName, productName } used to create the thread
   title,
   subtitle,
-  photoUrl,
+  photoUrl, // the OTHER person's picture (owner sees the customer, customer sees the owner) — also used for the "Seen" avatar
   onClose,
   closeLabel = 'Close',
 }) {
-  const { messages, loading, send } = useChat({ creditId, role, meta });
+  const { messages, loading, send, react, setTyping, otherTyping, editMessage, unsendMessage } = useChat({
+    creditId,
+    role,
+    meta,
+  });
+  const [picker, setPicker] = useState(null); // { id, below } — message whose reaction bar is open
+  const pressRef = useRef(null);
+  const [editing, setEditing] = useState(null); // { id, text } — customer editing their own message
+  const [editBusy, setEditBusy] = useState(false);
+  const [openHist, setOpenHist] = useState(() => new Set()); // owner: messages whose full edit history is expanded
   const [text, setText] = useState('');
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -86,8 +93,90 @@ export default function ChatWindow({
       }
       out.push({ type: 'msg', key: m.id, m, d });
     });
+    // Mark the last message of each run from the same sender (gets the little avatar)
+    out.forEach((it, idx) => {
+      if (it.type !== 'msg') return;
+      const next = out[idx + 1];
+      it.lastInRun = !next || next.type !== 'msg' || next.m.sender !== it.m.sender;
+    });
     return out;
   }, [messages]);
+
+  // Scroll down when the typing bubble appears (only if already near the bottom)
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (el && otherTyping && el.scrollHeight - el.scrollTop - el.clientHeight < 140) el.scrollTop = el.scrollHeight;
+  }, [otherTyping]);
+
+  // Close the reaction bar on outside tap / Escape
+  useEffect(() => {
+    if (!picker) return undefined;
+    const close = (e) => {
+      if (e.type === 'keydown' && e.key !== 'Escape') return;
+      if (e.type === 'pointerdown' && e.target.closest?.('[data-reaction-ui]')) return;
+      setPicker(null);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [picker]);
+
+  const openPicker = (id, el) => {
+    // Open below the bubble when it is too close to the top of the list to fit above
+    const list = listRef.current;
+    const below = Boolean(list && el && el.getBoundingClientRect().top - list.getBoundingClientRect().top < 130);
+    setPicker({ id, below, confirm: false });
+  };
+  const cancelPress = () => {
+    clearTimeout(pressRef.current);
+    pressRef.current = null;
+  };
+  const startPress = (e, id) => {
+    if (e.pointerType === 'mouse') return;
+    const el = e.currentTarget;
+    cancelPress();
+    pressRef.current = setTimeout(() => openPicker(id, el), 420);
+  };
+  useEffect(() => cancelPress, []);
+
+  const pickReaction = (m, key) => {
+    const mineNow = m.reactions?.[role];
+    setPicker(null);
+    react(m.id, mineNow === key ? null : key).catch(() => setError('Could not send your reaction.'));
+  };
+
+  const saveEdit = async () => {
+    if (!editing || editBusy) return;
+    setEditBusy(true);
+    setError('');
+    try {
+      await editMessage(editing.id, editing.text);
+      setEditing(null);
+    } catch (err) {
+      setError(err?.message?.length < 120 ? err.message : 'Could not save your edit. Please try again.');
+    } finally {
+      setEditBusy(false);
+    }
+  };
+  const doUnsend = async (id) => {
+    setPicker(null);
+    setError('');
+    try {
+      await unsendMessage(id);
+    } catch {
+      setError('Could not unsend this message. Please try again.');
+    }
+  };
+  const toggleHist = (id) =>
+    setOpenHist((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const pickFile = (e) => {
     const f = e.target.files?.[0];
@@ -109,6 +198,7 @@ export default function ChatWindow({
     setError('');
     try {
       await send({ text, file });
+      setTyping(false);
       setText('');
       setFile(null);
     } catch (err) {
@@ -134,14 +224,10 @@ export default function ChatWindow({
             {role === 'owner' ? '←' : '✕'}
           </button>
         )}
-        {photoUrl ? (
-          <img src={photoUrl} alt="" className={styles.headAvatar} />
-        ) : (
-          <span className={styles.headAvatarFallback}>{initialsOf(title)}</span>
-        )}
+        <Avatar url={photoUrl} name={title} size={40} ring />
         <div className={styles.headText}>
           <strong>{title}</strong>
-          {subtitle && <span>{subtitle}</span>}
+          {otherTyping ? <span className={styles.headTyping}>typing…</span> : subtitle && <span>{subtitle}</span>}
         </div>
       </div>
 
@@ -167,31 +253,273 @@ export default function ChatWindow({
             if (it.type === 'day') return <div key={it.key} className={styles.day}><span>{it.label}</span></div>;
             const { m, d } = it;
             const mine = m.sender === role;
-            const showStatus = mine && (m.id === lastMineId || m.imageUrl);
+            const unsent = Boolean(m.unsentAt);
+            const hist = m.editHistory || [];
+            const edited = hist.length > 0 || Boolean(m.editedAt);
+            const isOwnerView = role === 'owner';
+            // The customer never sees what they unsent; the owner always does.
+            const goneForMe = unsent && !isOwnerView;
+            const canAct = role === 'customer' && mine && !unsent; // Edit / Unsend
+            const isEditing = editing?.id === m.id;
+            const live = !unsent && !isEditing; // reactions + gestures
+            const showStatus = mine && !goneForMe && (m.id === lastMineId || m.imageUrl);
+            const reactions = live
+              ? Object.entries(m.reactions || {}).filter(([, k]) => REACTION_BY_KEY[k])
+              : [];
+            const myReaction = m.reactions?.[role];
+            const open = live && picker?.id === m.id;
+            const names = { [role]: 'You', [role === 'owner' ? 'customer' : 'owner']: title };
+            const histOpen = openHist.has(m.id);
+            const histTime = (at) => {
+              const dt = new Date(at);
+              return `${dayLabel(dt)} ${timeOf(dt)}`;
+            };
+            const mkBtn = (label, glyph) => (
+              <button
+                type="button"
+                className={styles.reactBtn}
+                data-reaction-ui
+                onClick={(e) => (open ? setPicker(null) : openPicker(m.id, e.currentTarget.parentElement))}
+                aria-label={label}
+                aria-expanded={open}
+              >
+                {glyph}
+              </button>
+            );
+            const reactBtn = live ? mkBtn('React to this message', '☺') : null;
+            const moreBtn = canAct && live ? mkBtn('Edit or unsend this message', '⋯') : null;
+
             return (
-              <div key={it.key} className={`${styles.row} ${mine ? styles.rowMine : ''}`}>
-                <div className={`${styles.bubble} ${mine ? styles.bubbleMine : styles.bubbleTheirs}`}>
-                  {m.imageUrl && (
-                    <ZoomableImage
-                      src={m.imageUrl}
-                      alt="Photo"
-                      caption={`${m.sender === 'owner' ? 'Store' : title} • ${dayLabel(d)} ${timeOf(d)}`}
-                      className={styles.photo}
-                    />
-                  )}
-                  {m.text && <p className={styles.text}>{m.text}</p>}
-                  <span className={styles.meta}>
-                    {timeOf(d)}
+              <div
+                key={it.key}
+                className={`${styles.row} ${mine ? styles.rowMine : ''} ${reactions.length ? styles.hasReactions : ''}`}
+              >
+                {unsent && isOwnerView && (
+                  <span className={styles.unsentFlag}>
+                    🚫 Customer unsent this message • {dayLabel(toDate(m.unsentAt))} {timeOf(toDate(m.unsentAt))}
                   </span>
+                )}
+
+                <div className={styles.line}>
+                  {!mine && (
+                    <span className={styles.sideAvatar}>
+                      {it.lastInRun && <Avatar url={photoUrl} name={title} size={26} />}
+                    </span>
+                  )}
+                  {mine && moreBtn}
+                  {mine && reactBtn}
+
+                  <div className={styles.bubbleWrap}>
+                    {open && (
+                      <div
+                        className={`${styles.picker} ${picker.below ? styles.pickerBelow : ''} ${mine ? styles.pickerMine : ''}`}
+                        data-reaction-ui
+                      >
+                        <div className={styles.pickRow} role="menu" aria-label="Choose a reaction">
+                          {REACTIONS.map((r, i) => (
+                            <button
+                              key={r.key}
+                              type="button"
+                              role="menuitem"
+                              className={`${styles.pick} ${myReaction === r.key ? styles.pickOn : ''}`}
+                              style={{ animationDelay: `${i * 30}ms` }}
+                              onClick={() => pickReaction(m, r.key)}
+                              aria-label={r.label}
+                              title={r.label}
+                            >
+                              {r.emoji}
+                            </button>
+                          ))}
+                        </div>
+
+                        {canAct &&
+                          (picker.confirm ? (
+                            <div className={styles.menu}>
+                              <p className={styles.menuNote}>
+                                Unsend this message? The store keeps a record of unsent messages.
+                              </p>
+                              <div className={styles.menuRow}>
+                                <button type="button" className={styles.menuItem} onClick={() => setPicker({ ...picker, confirm: false })}>
+                                  Cancel
+                                </button>
+                                <button type="button" className={`${styles.menuItem} ${styles.menuDanger}`} onClick={() => doUnsend(m.id)}>
+                                  Unsend
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={styles.menu} role="menu">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                className={styles.menuItem}
+                                onClick={() => {
+                                  setPicker(null);
+                                  setEditing({ id: m.id, text: m.text || '' });
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                className={`${styles.menuItem} ${styles.menuDanger}`}
+                                onClick={() => setPicker({ ...picker, confirm: true })}
+                              >
+                                🗑️ Unsend
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+
+                    <div
+                      className={`${styles.bubble} ${mine ? styles.bubbleMine : styles.bubbleTheirs} ${
+                        goneForMe ? styles.bubbleGone : ''
+                      } ${unsent && isOwnerView ? styles.bubbleUnsent : ''}`}
+                      onPointerDown={live ? (e) => startPress(e, m.id) : undefined}
+                      onPointerUp={live ? cancelPress : undefined}
+                      onPointerLeave={live ? cancelPress : undefined}
+                      onPointerCancel={live ? cancelPress : undefined}
+                      onContextMenu={
+                        live
+                          ? (e) => {
+                              e.preventDefault();
+                              openPicker(m.id, e.currentTarget);
+                            }
+                          : undefined
+                      }
+                      onDoubleClick={live ? () => pickReaction(m, 'like') : undefined}
+                    >
+                      {goneForMe ? (
+                        <p className={styles.text}>You unsent a message</p>
+                      ) : (
+                        <>
+                          {m.imageUrl && (
+                            <ZoomableImage
+                              src={m.imageUrl}
+                              alt="Photo"
+                              caption={`${m.sender === 'owner' ? 'Store' : title} • ${dayLabel(d)} ${timeOf(d)}`}
+                              className={styles.photo}
+                            />
+                          )}
+                          {isEditing ? (
+                            <div className={styles.editBox}>
+                              <textarea
+                                className={styles.editInput}
+                                autoFocus
+                                rows={2}
+                                maxLength={MAX_TEXT}
+                                value={editing.text}
+                                disabled={editBusy}
+                                onChange={(e) => setEditing({ ...editing, text: e.target.value })}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') setEditing(null);
+                                  else if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                                    e.preventDefault();
+                                    saveEdit();
+                                  }
+                                }}
+                                aria-label="Edit your message"
+                              />
+                              <div className={styles.editBtns}>
+                                <button type="button" onClick={() => setEditing(null)} disabled={editBusy}>
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.editSave}
+                                  onClick={saveEdit}
+                                  disabled={editBusy || !editing.text.trim()}
+                                >
+                                  {editBusy ? 'Saving…' : 'Save'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            m.text && <p className={styles.text}>{m.text}</p>
+                          )}
+                        </>
+                      )}
+                      <span className={styles.meta}>
+                        {timeOf(d)}
+                        {edited && !goneForMe && ' • Edited'}
+                      </span>
+                    </div>
+
+                    {reactions.length > 0 && (
+                      <button
+                        type="button"
+                        className={`${styles.reactions} ${mine ? styles.reactionsMine : ''}`}
+                        data-reaction-ui
+                        onClick={(e) => openPicker(m.id, e.currentTarget.parentElement)}
+                        title={reactions.map(([side, k]) => `${names[side]}: ${REACTION_BY_KEY[k].label}`).join(' • ')}
+                        aria-label={`Reactions: ${reactions.map(([side, k]) => `${names[side]} ${REACTION_BY_KEY[k].label}`).join(', ')}`}
+                      >
+                        {[...new Set(reactions.map(([, k]) => REACTION_BY_KEY[k].emoji))].join('')}
+                        {reactions.length > 1 && <span>{reactions.length}</span>}
+                      </button>
+                    )}
+                  </div>
+
+                  {!mine && reactBtn}
                 </div>
+
+                {/* ── Owner-only audit trail: what the customer wrote BEFORE editing ── */}
+                {isOwnerView && hist.length > 0 && (
+                  <div className={styles.audit}>
+                    <p className={styles.auditHead}>
+                      ✏️ Edited {hist.length > 1 ? `${hist.length} times` : 'once'}
+                      {m.editedAt && ` • last edit ${dayLabel(toDate(m.editedAt))} ${timeOf(toDate(m.editedAt))}`}
+                    </p>
+                    {histOpen ? (
+                      <ol className={styles.auditList}>
+                        {hist.map((h, i) => (
+                          <li key={i}>
+                            <span>{i === 0 ? 'Original' : `Version ${i + 1}`} • {histTime(h.at)}</span>
+                            <q>{h.text || '(photo only, no text)'}</q>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className={styles.auditLast}>
+                        Before the edit: <q>{hist[hist.length - 1].text || '(photo only, no text)'}</q>
+                      </p>
+                    )}
+                    {hist.length > 1 && (
+                      <button type="button" className={styles.auditToggle} onClick={() => toggleHist(m.id)}>
+                        {histOpen ? 'Show less' : `Show all ${hist.length} versions`}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {showStatus && (
                   <span className={`${styles.status} ${m.seenAt ? styles.statusSeen : ''}`}>
-                    {m.seenAt ? `✓✓ Seen ${timeOf(toDate(m.seenAt))}` : '✓ Sent'}
+                    {m.seenAt ? (
+                      <>
+                        <Avatar url={photoUrl} name={title} size={16} />
+                        Seen {timeOf(toDate(m.seenAt))}
+                      </>
+                    ) : (
+                      '✓ Sent'
+                    )}
                   </span>
                 )}
               </div>
             );
           })
+        )}
+
+        {otherTyping && (
+          <div className={styles.row} aria-live="polite">
+            <div className={styles.line}>
+              <span className={styles.sideAvatar}><Avatar url={photoUrl} name={title} size={26} /></span>
+              <div className={`${styles.bubble} ${styles.bubbleTheirs} ${styles.typingBubble}`} aria-label={`${title} is typing`}>
+                <i /><i /><i />
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
@@ -234,7 +562,11 @@ export default function ChatWindow({
             maxLength={MAX_TEXT}
             placeholder={role === 'customer' ? 'Message the store…' : 'Reply…'}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              setTyping(e.target.value.trim().length > 0);
+            }}
+            onBlur={() => setTyping(false)}
             onKeyDown={onKeyDown}
             disabled={sending}
           />

@@ -46,8 +46,9 @@ export default function PassbookChat({ passbook, onClose }) {
           creditId={passbook.creditId}
           role="customer"
           meta={meta}
-          title="Message the Store"
-          subtitle={`${fullName}${passbook.product_name ? ` • ${passbook.product_name}` : ''}`}
+          title={passbook.owner?.name || 'Store owner'}
+          photoUrl={passbook.owner?.photo_url || null}
+          subtitle={passbook.owner?.name ? 'Store owner' : `${fullName}${passbook.product_name ? ` • ${passbook.product_name}` : ''}`}
           onClose={onClose}
           closeLabel="Close chat"
         />
