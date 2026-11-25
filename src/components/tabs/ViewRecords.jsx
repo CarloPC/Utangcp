@@ -16,6 +16,38 @@ function initials(customer) {
 
 const MAX_PHOTO_MB = 5;
 
+// ── Search helpers ──────────────────────────────────────────────────────
+// Lowercase, strip accents (ñ -> n), turn punctuation into spaces and
+// collapse repeated/trailing spaces so "Juan  Dela Cruz " == "juan dela cruz".
+const normalizeText = (v) =>
+  String(v ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// Every word the person typed must match somewhere in the customer's name,
+// product or mobile number, in any order. This makes "Juan Dela Cruz",
+// "Cruz Juan" and "juan cruz" all find the same customer.
+function customerMatchesSearch(c, rawQuery) {
+  const q = normalizeText(rawQuery);
+  if (!q) return true;
+  const haystack = [
+    normalizeText(`${c.firstname ?? ''} ${c.lastname ?? ''}`),
+    normalizeText(`${c.lastname ?? ''} ${c.firstname ?? ''}`),
+    normalizeText(c.product_name),
+    normalizeText(c.mobile_number),
+  ].join(' ');
+  const digitsOnly = String(c.mobile_number ?? '').replace(/\D/g, '');
+  return q.split(' ').every((token) => {
+    if (haystack.includes(token)) return true;
+    // Let "0917 123 4567" style queries match a stored mobile number.
+    return /^\d+$/.test(token) && digitsOnly.includes(token);
+  });
+}
+
 // ── Avatar (used in the table + edit modal) ─────────────────────────────
 function Avatar({ customer, size = 40, onClick }) {
   const style = { width: size, height: size, fontSize: size * 0.4 };
@@ -342,35 +374,46 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
   const [revokeGroupTarget, setRevokeGroupTarget] = useState(null);
   const [revokingGroup, setRevokingGroup] = useState(false);
   const [search, setSearch] = useState('');
+  // Bulk share picker: settled customers are left out by default, and any
+  // customer can be ticked/unticked by hand (overrides keyed by customer id).
+  const [excludeSettled, setExcludeSettled] = useState(true);
+  const [pickOverrides, setPickOverrides] = useState({});
 
   const outstanding = useMemo(() => {
-    const q = search.toLowerCase();
     return customers.filter(
-      (c) =>
-        c.remaining_balance > 0 &&
-        (!q ||
-          c.firstname?.toLowerCase().includes(q) ||
-          c.lastname?.toLowerCase().includes(q) ||
-          c.mobile_number?.toLowerCase().includes(q) ||
-          c.product_name?.toLowerCase().includes(q))
+      (c) => c.remaining_balance > 0 && customerMatchesSearch(c, search)
     );
   }, [customers, search]);
 
   const fullyPaid = useMemo(() => {
-    const q = search.toLowerCase();
     return customers.filter(
-      (c) =>
-        c.remaining_balance <= 0 &&
-        (!q ||
-          c.firstname?.toLowerCase().includes(q) ||
-          c.lastname?.toLowerCase().includes(q) ||
-          c.mobile_number?.toLowerCase().includes(q) ||
-          c.product_name?.toLowerCase().includes(q))
+      (c) => c.remaining_balance <= 0 && customerMatchesSearch(c, search)
     );
   }, [customers, search]);
 
   // Everything the current search matches (both tables) = the Bulk Share list
   const matches = useMemo(() => [...outstanding, ...fullyPaid], [outstanding, fullyPaid]);
+
+  // Customers shown in the share picker, and which of them are ticked.
+  const pickerList = excludeSettled ? outstanding : matches;
+  const isPicked = (c) =>
+    c.id in pickOverrides ? pickOverrides[c.id] : c.remaining_balance > 0;
+  const selectedForShare = pickerList.filter(isPicked);
+  const togglePick = (c) =>
+    setPickOverrides((prev) => ({ ...prev, [c.id]: !isPicked(c) }));
+  const pickAll = () =>
+    setPickOverrides((prev) => {
+      const next = { ...prev };
+      pickerList.forEach((c) => { next[c.id] = true; });
+      return next;
+    });
+  const pickNone = () =>
+    setPickOverrides((prev) => {
+      const next = { ...prev };
+      pickerList.forEach((c) => { next[c.id] = false; });
+      return next;
+    });
+  const settledHiddenCount = excludeSettled ? fullyPaid.length : 0;
 
   // Always show the live record (profileTarget is only a click-time snapshot)
   const liveProfile = useMemo(
@@ -414,19 +457,19 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
     setBulkBusy(true);
     setBulkError('');
     try {
-      const link = onBulkShare(title, matches.map((c) => c.id)); // sync: { url, ready }
+      const link = onBulkShare(title, selectedForShare.map((c) => c.id)); // sync: { url, ready }
       const copied = copyText(link.url); // inside the click gesture
       await link.ready;
       setBulkOpen(false);
       if (await copied) {
-        setAlert({ type: 'success', message: `Bulk passbook link for ${matches.length} customer(s) copied to clipboard!` });
+        setAlert({ type: 'success', message: `Bulk passbook link for ${selectedForShare.length} customer(s) copied to clipboard!` });
       } else {
         window.prompt('Copy this bulk passbook link:', link.url);
       }
     } catch (err) {
       setBulkError(
         err?.message === 'too-large'
-          ? 'This list has too many customers/payments for one link. Narrow your search and try again.'
+          ? 'This list has too many customers/payments for one link. Select fewer customers and try again.'
           : 'Could not create the link. Please try again.'
       );
     } finally {
@@ -500,21 +543,8 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
           onChange={(e) => setSearch(e.target.value)}
         />
         {search && (
-          <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>Reset</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); setPickOverrides({}); }}>Reset</button>
         )}
-      </div>
-
-      {/* Bulk share: search first, then share every result */}
-      <div className={styles.bulkRow}>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
-          disabled={!search.trim() || matches.length === 0}
-          onClick={() => { setBulkError(''); setBulkOpen(true); }}
-        >
-          🔗 Bulk Share{search.trim() ? ` (${matches.length})` : ''}
-        </button>
-        {!search.trim() && <span className={styles.bulkHint}>Search for a name or item, then share all the results in one link.</span>}
       </div>
 
       <SharedLinksPanel
@@ -522,6 +552,88 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
         onCopy={handleCopyGroup}
         onRevoke={setRevokeGroupTarget}
       />
+
+      {/* Bulk share: collapsed by default; opens only when clicked */}
+      <details className={styles.sharePicker}>
+        <summary>
+          🔗 Bulk Share{search.trim() ? ` (${selectedForShare.length} selected)` : ''}
+        </summary>
+        <div className={styles.sharePickerBody}>
+          {!search.trim() ? (
+            <p className={styles.bulkHint}>
+              Search for a name or item above, then pick which customers to include in one shared link.
+            </p>
+          ) : (
+            <>
+              <div className={styles.sharePickerHead}>
+                <strong>Bulk Share</strong>
+                <label className={styles.excludeToggle}>
+                  <input
+                    type="checkbox"
+                    checked={excludeSettled}
+                    onChange={(e) => setExcludeSettled(e.target.checked)}
+                  />
+                  Exclude settled
+                  {settledHiddenCount > 0 && ` (${settledHiddenCount} hidden)`}
+                </label>
+              </div>
+
+              {pickerList.length === 0 ? (
+                <p className={styles.bulkHint}>
+                  {matches.length === 0
+                    ? 'No customers match your search.'
+                    : 'All matching customers are settled. Untick “Exclude settled” to include them.'}
+                </p>
+              ) : (
+                <>
+                  <div className={styles.sharePickerTools}>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={pickAll}>Select all</button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={pickNone}>Clear</button>
+                    <span className={styles.bulkHint}>
+                      {selectedForShare.length} of {pickerList.length} selected
+                    </span>
+                  </div>
+                  <ul className={styles.sharePickerList}>
+                    {pickerList.map((c) => {
+                      const settled = c.remaining_balance <= 0;
+                      return (
+                        <li
+                          key={c.id}
+                          className={styles.sharePickerItem}
+                          onClick={() => togglePick(c)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isPicked(c)}
+                            onChange={() => togglePick(c)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className={styles.sharePickerName}>
+                            {c.firstname} {c.lastname}
+                            {c.product_name && <em> · {c.product_name}</em>}
+                          </span>
+                          <span className={settled ? styles.sharePickerSettled : styles.sharePickerBalance}>
+                            {settled ? 'Settled' : formatCurrency(c.remaining_balance)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={selectedForShare.length === 0}
+                onClick={() => { setBulkError(''); setBulkOpen(true); }}
+              >
+                🔗 Share Selected ({selectedForShare.length})
+              </button>
+            </>
+          )}
+        </div>
+      </details>
 
       {/* Outstanding Table */}
       <div className={styles.section}>
@@ -628,7 +740,7 @@ export default function ViewRecords({ customers, payments, onUpdate, onDelete, o
 
       {bulkOpen && (
         <BulkShareModal
-          names={matches.map((c) => `${c.firstname} ${c.lastname}`)}
+          names={selectedForShare.map((c) => `${c.firstname} ${c.lastname}`)}
           defaultTitle={search.trim()}
           loading={bulkBusy}
           error={bulkError}

@@ -313,3 +313,20 @@
 
 .bulkRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -10px 0 24px; }
 .bulkHint { font-size: 0.82rem; color: var(--color-text-muted); }
+
+
+/* ── Bulk share picker (collapsible, matches the Shared links panel) ── */
+.sharePicker { max-width: 760px; margin: -8px 0 24px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface-2); }
+.sharePicker summary { padding: 10px 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.sharePickerBody { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--color-border); }
+.sharePickerHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; width: 100%; }
+.excludeToggle { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; cursor: pointer; }
+.sharePickerTools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sharePickerList { list-style: none; width: 100%; max-height: 260px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.sharePickerItem { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; }
+.sharePickerItem + .sharePickerItem { border-top: 1px dashed var(--color-border); }
+.sharePickerItem:hover { background: var(--color-surface-2); }
+.sharePickerName { flex: 1 1 auto; min-width: 0; font-size: 0.9rem; overflow-wrap: anywhere; }
+.sharePickerName em { font-style: normal; color: var(--color-text-muted); }
+.sharePickerBalance { font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+.sharePickerSettled { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; color: var(--color-text-muted); border: 1px solid var(--color-border); }

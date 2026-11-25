@@ -4,15 +4,27 @@ import ConfettiBurst from '../shared/ConfettiBurst';
 import { formatCurrency, today } from '../../utils/format';
 import styles from './BulkAdd.module.css';
 
-// Cycle of colors used to visually tell amount groups apart.
-const GROUP_COLORS = ['#2d68c4', '#f59e0b', '#16a34a', '#dc2626', '#7c3aed', '#0891b2', '#db2777', '#65a30d'];
+// Preset amounts, colored after the bills. Edit here to change them.
+const PRESET_AMOUNTS = [
+  { amount: '100', color: '#2d68c4' }, // blue
+  { amount: '200', color: '#16a34a' }, // green
+  { amount: '300', color: '#7c3aed' }, // purple
+  { amount: '400', color: '#dc2626' }, // red
+  { amount: '500', color: '#eab308' }, // yellow
+];
+const PRESET_COLOR_BY_AMOUNT = Object.fromEntries(PRESET_AMOUNTS.map((p) => [p.amount, p.color]));
+
+// Fallback colors for custom amounts that don't match a preset.
+const CUSTOM_COLORS = ['#0891b2', '#db2777', '#65a30d', '#ea580c', '#0d9488', '#6b7280'];
 
 let groupIdCounter = 1;
 const makeGroupId = () => `g-${groupIdCounter++}-${Date.now().toString(36)}`;
 
 export default function BulkAdd({ customers = [], payments = [], onBulkAdd }) {
   // Each group is its own custom amount "bucket": { id, amount }.
-  const [groups, setGroups] = useState(() => [{ id: makeGroupId(), amount: '100' }]);
+  const [groups, setGroups] = useState(() =>
+    PRESET_AMOUNTS.map((p) => ({ id: makeGroupId(), amount: p.amount }))
+  );
   // Which group new selections get assigned to when you tap a customer.
   const [activeGroupId, setActiveGroupId] = useState(() => groups[0].id);
   // Map of customerId -> groupId. A customer can only belong to one group at a time.
@@ -35,8 +47,16 @@ export default function BulkAdd({ customers = [], payments = [], onBulkAdd }) {
   const activeGroup = groups.find((g) => g.id === activeGroupId) || groups[0];
 
   const colorForGroup = (id) => {
-    const idx = groups.findIndex((g) => g.id === id);
-    return GROUP_COLORS[idx >= 0 ? idx % GROUP_COLORS.length : 0];
+    const group = groups.find((g) => g.id === id);
+    if (!group) return PRESET_AMOUNTS[0].color;
+    // Color follows the amount itself, so typing 200 in any chip turns it green.
+    const presetColor = PRESET_COLOR_BY_AMOUNT[String(Number(group.amount))];
+    if (presetColor) return presetColor;
+    // Custom amount: pick a stable fallback color by its position among custom chips.
+    const customIdx = groups
+      .filter((g) => !PRESET_COLOR_BY_AMOUNT[String(Number(g.amount))])
+      .findIndex((g) => g.id === id);
+    return CUSTOM_COLORS[Math.max(customIdx, 0) % CUSTOM_COLORS.length];
   };
 
   // Only show customers with a remaining balance > 0
