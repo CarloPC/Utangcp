@@ -63,6 +63,10 @@ export default function CustomerProfileModal({ customer, payments, onClose, onEd
               <span className={styles.detailValue}>{customer.product_name}</span>
             </div>
             <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Seller</span>
+              <span className={styles.detailValue}>{customer.seller || 'Owner'}</span>
+            </div>
+            <div className={styles.detailItem}>
               <span className={styles.detailLabel}>Date</span>
               <span className={styles.detailValue}>{formatDate(customer.date)}</span>
             </div>

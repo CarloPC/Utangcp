@@ -8,6 +8,7 @@ const EMPTY = {
   lastname: '',
   mobile_number: '',
   product_name: '',
+  seller: '',
   price: '',
   paid: '',
   date: today(),
@@ -217,6 +218,15 @@ export default function AddCustomer({ onAdd, onLogInitialPayment, onUploadPhoto 
               <input className="input" id="product_name" name="product_name" required
                 placeholder="e.g., Rice, Oil, etc."
                 value={form.product_name} onChange={handleChange} />
+            </div>
+          </div>
+
+          <div className={styles.grid2}>
+            <div className={styles.group}>
+              <label className="label" htmlFor="seller">Seller (Optional)</label>
+              <input className="input" id="seller" name="seller"
+                placeholder="Leave blank if you sold it yourself (Owner)"
+                value={form.seller} onChange={handleChange} />
             </div>
           </div>
 

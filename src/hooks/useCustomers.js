@@ -86,6 +86,8 @@ export function useCustomers(userId) {
         lastname: data.lastname,
         mobile_number: data.mobile_number || null,
         product_name: data.product_name,
+        // Optional: who sold it. null = the owner sold it directly.
+        seller: (data.seller || '').trim() || null,
         price,
         paid,
         remaining_balance,
@@ -114,6 +116,8 @@ export function useCustomers(userId) {
         remaining_balance,
         date: data.date,
       };
+      // Only touch seller when the form sends it; blank clears it back to Owner.
+      if (data.seller !== undefined) updatePayload.seller = (data.seller || '').trim() || null;
       // Only touch photo fields when explicitly provided, so a normal
       // detail edit doesn't accidentally wipe out an existing photo.
       if (data.photo_url !== undefined) updatePayload.photo_url = data.photo_url;

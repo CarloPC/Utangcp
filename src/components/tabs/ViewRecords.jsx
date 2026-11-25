@@ -38,6 +38,8 @@ function customerMatchesSearch(c, rawQuery) {
     normalizeText(`${c.firstname ?? ''} ${c.lastname ?? ''}`),
     normalizeText(`${c.lastname ?? ''} ${c.firstname ?? ''}`),
     normalizeText(c.product_name),
+    // No seller means the owner sold it, so searching "owner" lists those.
+    normalizeText(c.seller || 'owner'),
     normalizeText(c.mobile_number),
   ].join(' ');
   const digitsOnly = String(c.mobile_number ?? '').replace(/\D/g, '');
@@ -74,6 +76,7 @@ function EditModal({ customer, onSave, onClose, onUploadPhoto, onDeletePhoto }) 
     lastname: customer.lastname || '',
     mobile_number: customer.mobile_number || '',
     product_name: customer.product_name || '',
+    seller: customer.seller || '',
     price: customer.price ?? '',
     paid: customer.paid ?? '',
     date: customer.date || today(),
@@ -186,6 +189,10 @@ function EditModal({ customer, onSave, onClose, onUploadPhoto, onDeletePhoto }) 
             <div className={styles.group}>
               <label className="label">Product Name</label>
               <input className="input" name="product_name" required value={form.product_name} onChange={handleChange} />
+            </div>
+            <div className={styles.group}>
+              <label className="label">Seller (Optional)</label>
+              <input className="input" name="seller" placeholder="Blank = Owner" value={form.seller} onChange={handleChange} />
             </div>
             <div className={styles.group}>
               <label className="label">Total Price (₱)</label>
